@@ -1,8 +1,5 @@
-package com.agenda.backend.controller;
+package com.agenda.backend.exception;
 
-import com.agenda.backend.exception.AuthenticationFailedException;
-import com.agenda.backend.exception.EmailAlreadyInUseException;
-import com.agenda.backend.exception.ResourceNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -53,7 +50,10 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<Map<String, String>> handleNotReadable(HttpMessageNotReadableException ex, HttpServletRequest request) {
+    public ResponseEntity<Map<String, String>> handleNotReadable(
+            HttpMessageNotReadableException ex,
+            HttpServletRequest request
+    ) {
         if (isLoginEndpoint(request)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("error", "Invalid credentials"));
