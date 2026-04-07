@@ -4,6 +4,7 @@ import com.agenda.backend.controller.dto.LoginRequest;
 import com.agenda.backend.controller.dto.RegisterUserRequest;
 import com.agenda.backend.controller.dto.UserResponse;
 import com.agenda.backend.model.User;
+import com.agenda.backend.service.JwtService;
 import com.agenda.backend.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -15,14 +16,18 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Map;
+
 @RestController
-@RequestMapping({"/users", "/api/users"})
+@RequestMapping({"/api/users", "/api/auth"})
 public class UserController {
 
     private final UserService userService;
+    private final JwtService jwtService;
 
-    public UserController(UserService userService) {
+    public UserController(UserService userService, JwtService jwtService) {
         this.userService = userService;
+        this.jwtService = jwtService;
     }
 
     @PostMapping("/register")
@@ -32,9 +37,10 @@ public class UserController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<UserResponse> login(@Valid @RequestBody LoginRequest request) {
+    public ResponseEntity<Map<String, String>> login(@Valid @RequestBody LoginRequest request) {
         User user = userService.login(request);
-        return ResponseEntity.ok(UserResponse.from(user));
+        String token = jwtService.generateToken(user);
+        return ResponseEntity.ok(Map.of("token", token));
     }
 
     @GetMapping("/{id}")

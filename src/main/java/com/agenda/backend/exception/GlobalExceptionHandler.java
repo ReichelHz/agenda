@@ -64,6 +64,7 @@ public class GlobalExceptionHandler {
     }
 
     private boolean isLoginEndpoint(HttpServletRequest request) {
-        return request.getRequestURI() != null && request.getRequestURI().endsWith("/users/login");
+        String uri = request.getRequestURI();
+        return uri != null && (uri.endsWith("/api/auth/login") || uri.endsWith("/api/users/login"));
     }
 }

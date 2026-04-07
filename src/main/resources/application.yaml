@@ -6,3 +6,8 @@ spring:
       host: localhost
       port: 27017
       database: acortador_db
+
+app:
+  jwt:
+    secret: 9f5dbcf7698d4a85b6b04d3c20f5f0aef6e7599cc5f84f5893a148d43d6c31ad
+    expiration-ms: 86400000
