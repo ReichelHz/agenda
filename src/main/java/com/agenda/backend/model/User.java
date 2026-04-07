@@ -1,37 +1,31 @@
 package com.agenda.backend.model;
 
-import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 
-@Entity
-@Table(name = "users") // nombre de la tabla en la base de datos
+@Document(collection = "users")
 @Getter
 @Setter
 @NoArgsConstructor
 public class User {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private String id;
 
-    @Column(nullable = false)
     @NotBlank
     private String name;
 
-    @Column(unique = true, nullable = false)
     @NotBlank
     @Email
     private String email;
 
-    @Column(nullable = false)
     private String password;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
     private Role role;
 
     // Constructor con parámetros

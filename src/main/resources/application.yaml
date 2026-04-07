@@ -1,12 +1,8 @@
 spring:
   application:
     name: backend
-  datasource:
-    url: jdbc:postgresql://localhost:5432/agenda
-    driver-class-name: org.postgresql.Driver
-    username: postgres
-    password: postgres
-  jpa:
-    hibernate:
-      ddl-auto: update
-    show-sql: true
+  data:
+    mongodb:
+      host: localhost
+      port: 27017
+      database: acortador_db

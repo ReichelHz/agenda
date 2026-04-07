@@ -5,7 +5,7 @@ import com.agenda.backend.model.User;
 
 public class UserResponse {
 
-    private Long id;
+    private String id;
     private String name;
     private String email;
     private Role role;
@@ -19,11 +19,11 @@ public class UserResponse {
         return response;
     }
 
-    public Long getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(String id) {
         this.id = id;
     }
 
