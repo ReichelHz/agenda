@@ -3,12 +3,14 @@ package com.agenda.backend.service;
 import com.agenda.backend.controller.dto.CreateShortUrlRequest;
 import com.agenda.backend.exception.ResourceNotFoundException;
 import com.agenda.backend.model.ShortUrl;
+import com.agenda.backend.model.User;
 import com.agenda.backend.repository.ShortUrlRepository;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Random;
 
 @Service
 public class UrlService {
@@ -18,21 +20,20 @@ public class UrlService {
     private static final int MAX_RETRIES = 10;
 
     private final ShortUrlRepository shortUrlRepository;
-    private final Random random = new Random();
+    private final SecureRandom random = new SecureRandom();
 
     public UrlService(ShortUrlRepository shortUrlRepository) {
         this.shortUrlRepository = shortUrlRepository;
     }
 
-    public ShortUrl createShortUrl(CreateShortUrlRequest request, String userId) {
-        ShortUrl shortUrl = new ShortUrl();
-        shortUrl.setOriginalUrl(request.getOriginalUrl().trim());
-        shortUrl.setUserId(userId);
-        shortUrl.setShortCode(generateUniqueShortCode());
-        shortUrl.setClickCount(0);
-        shortUrl.setCreatedAt(LocalDateTime.now());
-
-        return shortUrlRepository.save(shortUrl);
+    public ShortUrl createShortUrl(CreateShortUrlRequest request, User authenticatedUser) {
+        ShortUrl shortUrl = buildShortUrl(request, authenticatedUser);
+        try {
+            return shortUrlRepository.save(shortUrl);
+        } catch (DuplicateKeyException ex) {
+            shortUrl.setShortCode(generateUniqueShortCode());
+            return shortUrlRepository.save(shortUrl);
+        }
     }
 
     public List<ShortUrl> listByUserId(String userId) {
@@ -64,5 +65,15 @@ public class UrlService {
             builder.append(CODE_CHARS.charAt(index));
         }
         return builder.toString();
+    }
+
+    private ShortUrl buildShortUrl(CreateShortUrlRequest request, User authenticatedUser) {
+        ShortUrl shortUrl = new ShortUrl();
+        shortUrl.setOriginalUrl(request.getOriginalUrl().trim());
+        shortUrl.setUserId(authenticatedUser.getId());
+        shortUrl.setShortCode(generateUniqueShortCode());
+        shortUrl.setClickCount(0);
+        shortUrl.setCreatedAt(LocalDateTime.now());
+        return shortUrl;
     }
 }

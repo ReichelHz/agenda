@@ -9,5 +9,5 @@ spring:
 
 app:
   jwt:
-    secret: 9f5dbcf7698d4a85b6b04d3c20f5f0aef6e7599cc5f84f5893a148d43d6c31ad
+    secret: ${JWT_SECRET:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef}
     expiration-ms: 86400000

@@ -39,12 +39,12 @@ public class UrlController {
             Authentication authentication
     ) {
         User user = getAuthenticatedUser(authentication);
-        ShortUrl created = urlService.createShortUrl(request, user.getId());
+        ShortUrl created = urlService.createShortUrl(request, user);
 
         Map<String, Object> body = Map.of(
                 "id", created.getId(),
                 "shortCode", created.getShortCode(),
-                "shortUrl", "/" + created.getShortCode(),
+            "shortUrl", "/r/" + created.getShortCode(),
                 "originalUrl", created.getOriginalUrl(),
                 "clickCount", created.getClickCount(),
                 "createdAt", created.getCreatedAt()
@@ -64,7 +64,7 @@ public class UrlController {
         return ResponseEntity.ok(urls);
     }
 
-    @GetMapping("/{shortCode}")
+    @GetMapping("/r/{shortCode}")
     public ResponseEntity<Void> redirect(@PathVariable String shortCode) {
         ShortUrl shortUrl = urlService.resolveAndCountClick(shortCode);
         return ResponseEntity.status(HttpStatus.FOUND)

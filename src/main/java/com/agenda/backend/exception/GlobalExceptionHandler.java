@@ -1,5 +1,6 @@
 package com.agenda.backend.exception;
 
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -30,6 +31,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, String>> handleAuthenticationFailed() {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(Map.of("error", "Invalid credentials"));
+    }
+
+    @ExceptionHandler(JwtException.class)
+    public ResponseEntity<Map<String, String>> handleJwtException() {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of("error", "Invalid or expired token"));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -65,6 +72,6 @@ public class GlobalExceptionHandler {
 
     private boolean isLoginEndpoint(HttpServletRequest request) {
         String uri = request.getRequestURI();
-        return uri != null && (uri.endsWith("/api/auth/login") || uri.endsWith("/api/users/login"));
+        return uri != null && uri.endsWith("/api/auth/login");
     }
 }
