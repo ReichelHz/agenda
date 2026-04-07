@@ -30,13 +30,13 @@ MongoDB: Corriendo localmente en localhost:27017 o vía Docker.
 JDK 21 instalado.
 
 Pasos
-Clona el repositorio: git clone <url-del-repo>
+Clona el repositorio: git clone 
 
 Configura las variables de entorno en tu sistema o en el application.yaml:
 
 JWT_SECRET: Clave maestra para la firma de tokens (mínimo 64 caracteres).
 
-MONGO_DB_NAME: terapias_db (Recomendado cambiar de acortador_db para mayor claridad).
+MONGO_DB_NAME: terapias_db.
 
 Ejecuta la aplicación:
 
