@@ -71,7 +71,12 @@ public class UrlService {
         ShortUrl shortUrl = new ShortUrl();
         shortUrl.setOriginalUrl(request.getOriginalUrl().trim());
         shortUrl.setUserId(authenticatedUser.getId());
-        shortUrl.setShortCode(generateUniqueShortCode());
+        
+        String code = (request.getCustomAlias() != null && !request.getCustomAlias().isBlank())
+                ? request.getCustomAlias().trim()
+                : generateUniqueShortCode();
+        
+        shortUrl.setShortCode(code);
         shortUrl.setClickCount(0);
         shortUrl.setCreatedAt(LocalDateTime.now());
         return shortUrl;

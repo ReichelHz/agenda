@@ -17,11 +17,10 @@ JUnit 5 & MockMvc: Pruebas de integración automatizadas para el flujo de seguri
 🔐 Seguridad y Acceso
 La API implementa un modelo de seguridad basado en Roles (PATIENT, PROFESSIONAL, ADMIN) y Tokens JWT:
 
-Público: /api/auth/** (Registro/Login) y /r/** (Redirección).
+- **Público**: `/api/auth/**`, `/r/**`, `GET /api/services` y `GET /api/availabilities/**`.
+- **Protegido**: Requiere Header `Authorization: Bearer <token>`.
 
-Protegido: Requiere Header Authorization: Bearer <token>.
-
-Privacidad: Implementación de /api/users/me para asegurar que cada usuario acceda solo a su propia información.
+Privacidad: Implementación de `/api/users/me` para asegurar que cada usuario acceda solo a su propia información.
 
 ### 👥 Estructura de Roles
 | Rol | Descripción |
@@ -30,22 +29,32 @@ Privacidad: Implementación de /api/users/me para asegurar que cada usuario acce
 | **PROFESSIONAL** | Terapeuta con perfil público que gestiona su propia agenda y servicios. |
 | **ADMIN** | Gestión global del sistema y moderación de servicios. |
 
-### 🛣️ Endpoints Principales
-**Autenticación (`/api/auth`)**
-- `POST /register`: Registro de nuevos usuarios (especificando rol).
-- `POST /login`: Obtención de JWT para acceso protegido.
-
-**Usuarios (`/api/users`)**
-- `GET /me`: Obtiene el perfil del usuario autenticado.
-
-**Redirección (`/r`)**
-- `GET /{code}`: Acceso rápido a perfiles públicos de profesionales.
+### 🛣️ Endpoints de Interés
+- `POST /api/urls`: Acortador con soporte para `customAlias` (ej: `/r/maria-terapeuta`).
+- `GET /api/availabilities/professional/{id}`: Consulta de agenda pública.
+- `GET /api/services`: Catálogo público de terapias.
+- `GET /api/users/me`: Perfil del usuario actual.
 
 ### 🏗️ Arquitectura de Datos
 El sistema utiliza una estructura de **herencia lógica** vinculada al usuario:
-- **User**: Contiene las credenciales y el rol principal.
-- **Patient**: Extiende al usuario con datos médicos y personales para las citas.
-- **Professional**: Extiende al usuario con información de especialidad y disponibilidad horaria.
+- **User**: Credenciales básicas y rol.
+- **Professional**: Extendida con `phone`, `birthDate`, `description` y lista de `Service`.
+- **Availability**: Bloques horarios (Día, Hora Inicio, Hora Fin) vinculados al Profesional.
+- **Service**: Definición de terapia (Nombre, Duración, Precio).
+
+---
+
+### 🚀 Estrategia de Despliegue (Recomendado)
+Para mantener el proyecto en un entorno gratuito y profesional:
+- **Backend**: [Koyeb](https://www.koyeb.com/) (Plan Nano). 
+    * *Nota*: Configurar `JAVA_TOOL_OPTIONS: -Xmx384m` para optimizar la RAM.
+- **Base de Datos**: [Supabase](https://supabase.com/) (PostgreSQL).
+- **Frontend**: [Vercel](https://vercel.com/).
+
+### 📧 Integración de Emails
+Para el envío de notificaciones de citas sin costo:
+- **Proveedor**: [Brevo](https://www.brevo.com/) (vía SMTP o API) o **Gmail SMTP** (requiere App Password).
+- **Lógica**: Implementación mediante `spring-boot-starter-mail`.
 
 ---
 
@@ -70,10 +79,82 @@ Bash
 ./mvnw spring-boot:run
 📌 Roadmap de Desarrollo
 - [x] **Infraestructura Base**: migración exitosa de MongoDB a PostgreSQL (Supabase) + Java 21.
-- [x] **Seguridad**: implementación de JWT, encriptación BCrypt y control de acceso por roles.
-- [x] **Motor de Enlaces**: sistema de redirección segura `/r/{code}` para perfiles.
-- [ ] **Módulo de Servicios**: entidad `Service/Therapy` (gestión de precios y especialidades).
-- [ ] **Gestión de Agenda**: entidad `Appointment` con lógica de validación de horarios y disponibilidad.
+- [x] **Seguridad**: implementación de JWT, BCrypt y resolución de dependencias circulares.
+- [x] **Motor de Enlaces**: sistema `/r/{code}` con soporte para `customAlias`.
+- [x] **Módulo de Servicios**: entidad `Service` (gestión de precios y nombres).
+- [x] **Gestión de Agenda**: entidad `Availability` y acceso público a calendarios.
+- [ ] **Módulo de Reservas**: proceso de agendamiento (`Appointment`) y validación de horarios.
 - [ ] **Notificaciones**: integración de servicio para alertas por email.
 - [ ] **Documentación**: integración de Swagger/OpenAPI.
 - [ ] **Despliegue**: dockerización y setup de CI/CD para producción.
+
+---
+
+## 📖 Guía rápida para Frontend
+
+**URL Base**: `http://localhost:8081`
+
+### 🔑 Autenticación
+Todas las rutas protegidas requieren el Header: `Authorization: Bearer <token>`.
+
+#### Registro de Profesional
+`POST /api/auth/register`
+```json
+{
+  "name": "Maria Perez",
+  "email": "maria@example.com",
+  "password": "password123",
+  "role": "PROFESSIONAL",
+  "phone": "+56912345678",
+  "birthDate": "1985-05-20"
+}
+```
+
+#### Login (Obtener Token)
+`POST /api/auth/login` -> devuelve `{"token": "..."}`
+
+---
+
+### 🏥 Módulo de Terapias
+#### Listar Servicios (PÚBLICO)
+`GET /api/services`
+
+#### Crear Servicio (PROTEGIDO)
+`POST /api/services`
+```json
+{
+  "name": "Reiki",
+  "durationMinutes": 60,
+  "price": 25000
+}
+```
+
+---
+
+### 📅 Agenda y Disponibilidad
+#### Ver Agenda de un Profesional (PÚBLICO)
+`GET /api/availabilities/professional/{id}`
+
+#### Crear Bloque de Disponibilidad (PROTEGIDO)
+`POST /api/availabilities`
+```json
+{
+  "professional": { "id": 1 },
+  "dayOfWeek": "MONDAY",
+  "startTime": "09:00:00",
+  "endTime": "10:00:00"
+}
+```
+
+---
+
+### 🔗 Motor de Enlaces
+#### Crear Link Personalizado (PROTEGIDO)
+`POST /api/urls`
+```json
+{
+  "originalUrl": "https://tu-web-frontend.com/profile/1",
+  "customAlias": "maria-terapeuta"
+}
+```
+*Acceso al link via: `GET /r/maria-terapeuta`*
