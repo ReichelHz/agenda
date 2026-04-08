@@ -1,17 +1,15 @@
 package com.agenda.backend.repository;
 
 import com.agenda.backend.model.ShortUrl;
-import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface ShortUrlRepository extends MongoRepository<ShortUrl, String> {
+public interface ShortUrlRepository extends JpaRepository<ShortUrl, Long> {
     Optional<ShortUrl> findByShortCode(String shortCode);
-
-    List<ShortUrl> findAllByUserId(String userId);
-
     boolean existsByShortCode(String shortCode);
+    List<ShortUrl> findAllByUserId(Long userId);
 }

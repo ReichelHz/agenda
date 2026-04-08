@@ -36,7 +36,7 @@ public class UrlService {
         }
     }
 
-    public List<ShortUrl> listByUserId(String userId) {
+    public List<ShortUrl> listByUserId(Long userId) {
         return shortUrlRepository.findAllByUserId(userId);
     }
 

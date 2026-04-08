@@ -1,0 +1,109 @@
+﻿[INFO] Scanning for projects...
+[INFO] 
+[INFO] -------------------------< com.agenda:backend >-------------------------
+[INFO] Building  0.0.1-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- clean:3.4.1:clean (default-clean) @ backend ---
+[INFO] Deleting C:\Users\DaniAmbar\Desktop\taller\agenda\target
+[INFO] 
+[INFO] >>> spring-boot:3.5.13:run (default-cli) > test-compile @ backend >>>
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ backend ---
+[INFO] Copying 1 resource from src\main\resources to target\classes
+[INFO] Copying 0 resource from src\main\resources to target\classes
+[INFO] 
+[INFO] --- compiler:3.14.1:compile (default-compile) @ backend ---
+[INFO] Recompiling the module because of changed source code.
+[INFO] Compiling 25 source files with javac [debug parameters release 21] to target\classes
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ backend ---
+[INFO] skip non existing resourceDirectory C:\Users\DaniAmbar\Desktop\taller\agenda\src\test\resources
+[INFO] 
+[INFO] --- compiler:3.14.1:testCompile (default-testCompile) @ backend ---
+[INFO] Recompiling the module because of changed dependency.
+[INFO] Compiling 1 source file with javac [debug parameters release 21] to target\test-classes
+[INFO] 
+[INFO] <<< spring-boot:3.5.13:run (default-cli) < test-compile @ backend <<<
+[INFO] 
+[INFO] 
+[INFO] --- spring-boot:3.5.13:run (default-cli) @ backend ---
+[INFO] Attaching agents: []
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::               (v3.5.13)
+
+2026-04-06T22:12:39.413-04:00  INFO 10008 --- [backend] [           main] com.agenda.backend.BackendApplication    : Starting BackendApplication using Java 21.0.10 with PID 10008 (C:\Users\DaniAmbar\Desktop\taller\agenda\target\classes started by HP Pavilion 15 in C:\Users\DaniAmbar\Desktop\taller\agenda)
+2026-04-06T22:12:39.415-04:00  INFO 10008 --- [backend] [           main] com.agenda.backend.BackendApplication    : No active profile set, falling back to 1 default profile: "default"
+2026-04-06T22:12:40.076-04:00  INFO 10008 --- [backend] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-04-06T22:12:40.134-04:00  INFO 10008 --- [backend] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 50 ms. Found 6 JPA repository interfaces.
+2026-04-06T22:12:40.642-04:00  INFO 10008 --- [backend] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8082 (http)
+2026-04-06T22:12:40.658-04:00  INFO 10008 --- [backend] [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-04-06T22:12:40.658-04:00  INFO 10008 --- [backend] [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.53]
+2026-04-06T22:12:40.711-04:00  INFO 10008 --- [backend] [           main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2026-04-06T22:12:40.712-04:00  INFO 10008 --- [backend] [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 1253 ms
+2026-04-06T22:12:40.856-04:00  INFO 10008 --- [backend] [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-04-06T22:12:40.906-04:00  INFO 10008 --- [backend] [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.6.45.Final
+2026-04-06T22:12:40.933-04:00  INFO 10008 --- [backend] [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-04-06T22:12:41.194-04:00  INFO 10008 --- [backend] [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-04-06T22:12:41.219-04:00  INFO 10008 --- [backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-04-06T22:12:42.943-04:00  INFO 10008 --- [backend] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection org.postgresql.jdbc.PgConnection@1de08775
+2026-04-06T22:12:42.944-04:00  INFO 10008 --- [backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-04-06T22:12:43.711-04:00  INFO 10008 --- [backend] [           main] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+	Database JDBC URL [Connecting through datasource 'HikariDataSource (HikariPool-1)']
+	Database driver: undefined/unknown
+	Database version: 17.6
+	Autocommit mode: undefined/unknown
+	Isolation level: undefined/unknown
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2026-04-06T22:12:44.655-04:00  INFO 10008 --- [backend] [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+Hibernate: set client_min_messages = WARNING
+Hibernate: alter table if exists appointment drop constraint if exists FK4apif2ewfyf14077ichee8g06
+Hibernate: alter table if exists appointment drop constraint if exists FK7y39ubfrch1jv1csekp9rmup6
+Hibernate: alter table if exists appointment drop constraint if exists FKg1ec4bkvxnkor2lx10a49rsuy
+Hibernate: alter table if exists availability drop constraint if exists FKncd8itlxs7wwqiuy6i63epe6q
+Hibernate: alter table if exists patient drop constraint if exists FKf0or75ex3abs31ottuqg8s301
+Hibernate: alter table if exists professional drop constraint if exists FKi4510joe1okxifebj4omxx0hw
+Hibernate: alter table if exists professional_services drop constraint if exists FKsef8v56ad1lr8vx9ugy5r020f
+Hibernate: alter table if exists professional_services drop constraint if exists FKrh804jp87l7243y9ahno1odcc
+Hibernate: drop table if exists appointment cascade
+Hibernate: drop table if exists availability cascade
+Hibernate: drop table if exists patient cascade
+Hibernate: drop table if exists professional cascade
+Hibernate: drop table if exists professional_services cascade
+Hibernate: drop table if exists service cascade
+Hibernate: drop table if exists users cascade
+Hibernate: create table appointment (date date not null, time time(6) not null, id bigint generated by default as identity, patient_id bigint not null, professional_id bigint not null, service_id bigint not null, reservation_code varchar(255) not null unique, status varchar(255) not null check (status in ('PENDING','CONFIRMED','CANCELLED','COMPLETED')), primary key (id))
+Hibernate: create table availability (end_time time(6) not null, start_time time(6) not null, id bigint generated by default as identity, professional_id bigint not null, day_of_week varchar(255) not null check (day_of_week in ('MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY','SUNDAY')), primary key (id))
+Hibernate: create table patient (birth_date date, id bigint not null, phone varchar(255), primary key (id))
+Hibernate: create table professional (id bigint not null, description varchar(255), specialty varchar(255), primary key (id))
+Hibernate: create table professional_services (professional_id bigint not null, service_id bigint not null, primary key (professional_id, service_id))
+Hibernate: create table service (duration_minutes integer, price numeric(38,2), id bigint generated by default as identity, name varchar(255) not null, primary key (id))
+Hibernate: create table users (id bigint generated by default as identity, email varchar(255) not null unique, name varchar(255) not null, password varchar(255) not null, role varchar(255) not null check (role in ('PATIENT','PROFESSIONAL','ADMIN')), primary key (id))
+Hibernate: alter table if exists appointment add constraint FK4apif2ewfyf14077ichee8g06 foreign key (patient_id) references patient
+Hibernate: alter table if exists appointment add constraint FK7y39ubfrch1jv1csekp9rmup6 foreign key (professional_id) references professional
+Hibernate: alter table if exists appointment add constraint FKg1ec4bkvxnkor2lx10a49rsuy foreign key (service_id) references service
+Hibernate: alter table if exists availability add constraint FKncd8itlxs7wwqiuy6i63epe6q foreign key (professional_id) references professional
+Hibernate: alter table if exists patient add constraint FKf0or75ex3abs31ottuqg8s301 foreign key (id) references users
+Hibernate: alter table if exists professional add constraint FKi4510joe1okxifebj4omxx0hw foreign key (id) references users
+Hibernate: alter table if exists professional_services add constraint FKsef8v56ad1lr8vx9ugy5r020f foreign key (service_id) references service
+Hibernate: alter table if exists professional_services add constraint FKrh804jp87l7243y9ahno1odcc foreign key (professional_id) references professional
+2026-04-06T22:12:49.428-04:00  INFO 10008 --- [backend] [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-04-06T22:12:49.759-04:00  WARN 10008 --- [backend] [           main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-04-06T22:12:49.789-04:00  WARN 10008 --- [backend] [           main] .s.s.UserDetailsServiceAutoConfiguration : 
+
+Using generated security password: 3de5aeaf-4a55-463f-84d0-ff67254f159a
+
+This generated password is for development use only. Your security configuration must be updated before running your application in production.
+
+2026-04-06T22:12:49.796-04:00  INFO 10008 --- [backend] [           main] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name inMemoryUserDetailsManager
+2026-04-06T22:12:50.274-04:00  INFO 10008 --- [backend] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8082 (http) with context path '/'
+2026-04-06T22:12:50.280-04:00  INFO 10008 --- [backend] [           main] com.agenda.backend.BackendApplication    : Started BackendApplication in 11.339 seconds (process running for 11.755)

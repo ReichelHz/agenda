@@ -39,7 +39,7 @@ public class UserService implements UserDetailsService {
         user.setName(request.getName().trim());
         user.setEmail(normalizedEmail);
         user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setRole(request.getRole() == null ? Role.USER : request.getRole());
+        user.setRole(request.getRole() == null ? Role.PATIENT : request.getRole());
 
         return userRepository.save(user);
     }
@@ -56,7 +56,7 @@ public class UserService implements UserDetailsService {
         return user;
     }
 
-    public User getById(String id) {
+    public User getById(Long id) {
         return userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
     }

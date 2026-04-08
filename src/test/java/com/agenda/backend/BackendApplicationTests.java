@@ -38,10 +38,10 @@ class BackendApplicationTests {
 	@Test
 	void loginEndpointReturnsTokenOnPost() throws Exception {
 		User user = new User();
-		user.setId("u1");
+		user.setId(1L);
 		user.setEmail("test@example.com");
 		user.setPassword("encoded-password");
-		user.setRole(Role.USER);
+		user.setRole(Role.PATIENT);
 
 		when(userService.login(any())).thenReturn(user);
 		when(jwtService.generateToken(user)).thenReturn("fake.jwt.token");

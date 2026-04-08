@@ -1,36 +1,35 @@
 package com.agenda.backend.model;
 
+import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.validator.constraints.URL;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.index.Indexed;
-import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
 
-@Document(collection = "short_urls")
+@Entity
+@Table(name = "short_urls")
 @Getter
 @Setter
 @NoArgsConstructor
 public class ShortUrl {
 
     @Id
-    private String id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
     @NotBlank
     @URL
     private String originalUrl;
 
-    @Indexed(unique = true)
+    @Column(unique = true)
     private String shortCode;
 
-    @NotBlank
-    private String userId;
+    private Long userId;
 
     private int clickCount = 0;
 
-    private LocalDateTime createdAt;
+    private LocalDateTime createdAt = LocalDateTime.now();
 }

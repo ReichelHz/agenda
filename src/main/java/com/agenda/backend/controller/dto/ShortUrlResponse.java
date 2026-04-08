@@ -1,12 +1,16 @@
 package com.agenda.backend.controller.dto;
 
 import com.agenda.backend.model.ShortUrl;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 
+@Getter
+@Setter
 public class ShortUrlResponse {
 
-    private String id;
+    private Long id;
     private String originalUrl;
     private String shortCode;
     private int clickCount;
@@ -20,45 +24,5 @@ public class ShortUrlResponse {
         response.setClickCount(shortUrl.getClickCount());
         response.setCreatedAt(shortUrl.getCreatedAt());
         return response;
-    }
-
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    public String getOriginalUrl() {
-        return originalUrl;
-    }
-
-    public void setOriginalUrl(String originalUrl) {
-        this.originalUrl = originalUrl;
-    }
-
-    public String getShortCode() {
-        return shortCode;
-    }
-
-    public void setShortCode(String shortCode) {
-        this.shortCode = shortCode;
-    }
-
-    public int getClickCount() {
-        return clickCount;
-    }
-
-    public void setClickCount(int clickCount) {
-        this.clickCount = clickCount;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
     }
 }

@@ -1,6 +1,7 @@
 package com.agenda.backend.model;
 
 public enum Role {
-    USER,
+    PATIENT,
+    PROFESSIONAL,
     ADMIN
 }
