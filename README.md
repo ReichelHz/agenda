@@ -90,15 +90,60 @@ Bash
 
 ---
 
-## 📖 Guía rápida para Frontend
+---
 
-**URL Base**: `http://localhost:8081`
+## 📖 Guía para el Desarrollador Frontend
 
-### 🔑 Autenticación
-Todas las rutas protegidas requieren el Header: `Authorization: Bearer <token>`.
+### 🌐 Configuración de Conexión
+- **URL Base**: `http://localhost:8081`
+- **CORS**: Permitido para `localhost:3000`, `5173` y `4200`.
 
-#### Registro de Profesional
-`POST /api/auth/register`
+### 🔐 Flujo de Autenticación
+1.  **Obtención**: Envía las credenciales a `POST /api/auth/login`.
+2.  **Almacenamiento**: Guarda el `token` devuelto (ej. en LocalStorage).
+3.  **Uso**: En cada petición protegida, añade el Header:  
+    `Authorization: Bearer <TU_TOKEN_AQUÍ>`
+
+---
+
+### 📑 Referencia de Endpoints
+
+| Método | Endpoint | Especial | Auth | Body (Request) |
+| :--- | :--- | :--- | :--- | :--- |
+| **POST** | `/api/auth/register` | Registro | No | Ver ejemplo abajo |
+| **POST** | `/api/auth/login` | Login | No | `{"email":"", "password":""}` |
+| **GET** | `/api/users/me` | Mi Perfil | **SÍ** | - |
+| **GET** | `/api/services` | Listar Terapias | No | - |
+| **POST** | `/api/services` | Crear Terapia | **SÍ** | `{"name":"", "durationMinutes":60, "price":0}` |
+| **GET** | `/api/availabilities/professional/{id}` | Agenda Pública | No | - |
+| **POST** | `/api/availabilities` | Crear Horario | **SÍ** | `{"professional":{"id":1}, "dayOfWeek":"MONDAY", "startTime":"HH:mm:ss", "endTime":"HH:mm:ss"}` |
+| **POST** | `/api/urls` | Crear Link Corto | **SÍ** | `{"originalUrl":"", "customAlias":""}` |
+| **GET** | `/r/{code}` | Redirección | No | - |
+
+---
+
+---
+
+### 📦 Detalle de Endpoints (Manual paso a paso)
+
+#### 1. Autenticación y Registro
+
+**A) Login (Obtener Acceso)**
+- **URL**: `POST /api/auth/login`
+- **Auth**: No requiere.
+- **Body**:
+```json
+{
+    "email": "maria@terapias.com",
+    "password": "password123"
+}
+```
+- **Respuesta**: Devuelve un `token`. Úsalo en el header de las demás peticiones.
+
+**B) Registro de Profesional**
+- **URL**: `POST /api/auth/register`
+- **Auth**: No requiere.
+- **Body**:
 ```json
 {
   "name": "Maria Perez",
@@ -110,33 +155,49 @@ Todas las rutas protegidas requieren el Header: `Authorization: Bearer <token>`.
 }
 ```
 
-#### Login (Obtener Token)
-`POST /api/auth/login` -> devuelve `{"token": "..."}`
-
----
-
-### 🏥 Módulo de Terapias
-#### Listar Servicios (PÚBLICO)
-`GET /api/services`
-
-#### Crear Servicio (PROTEGIDO)
-`POST /api/services`
+**C) Registro de Paciente**
+- **URL**: `POST /api/auth/register`
+- **Auth**: No requiere.
+- **Body**:
 ```json
 {
-  "name": "Reiki",
-  "durationMinutes": 60,
-  "price": 25000
+  "name": "Juan Perez",
+  "email": "juan@example.com",
+  "password": "password123",
+  "role": "PATIENT"
 }
 ```
 
 ---
 
-### 📅 Agenda y Disponibilidad
-#### Ver Agenda de un Profesional (PÚBLICO)
-`GET /api/availabilities/professional/{id}`
+#### 2. Gestión de Terapias y Disponibilidad
 
-#### Crear Bloque de Disponibilidad (PROTEGIDO)
-`POST /api/availabilities`
+**D) Listar Terapias (Público)**
+- **URL**: `GET /api/services`
+- **Auth**: No requiere.
+- **Respuesta**: Lista de objetos `Service`.
+
+**E) Crear Terapia**
+- **URL**: `POST /api/services`
+- **Auth**: **SÍ (Bearer Token)**
+- **Body**:
+```json
+{
+  "name": "Masaje Descontracturante",
+  "durationMinutes": 60,
+  "price": 30000
+}
+```
+
+**F) Ver Horarios de un Profesional (Público)**
+- **URL**: `GET /api/availabilities/professional/{id}`
+- **Auth**: No requiere.
+- **Nota**: El `{id}` es el ID numérico del profesional.
+
+**G) Crear Horario de Disponibilidad**
+- **URL**: `POST /api/availabilities`
+- **Auth**: **SÍ (Bearer Token)**
+- **Body**:
 ```json
 {
   "professional": { "id": 1 },
@@ -148,13 +209,33 @@ Todas las rutas protegidas requieren el Header: `Authorization: Bearer <token>`.
 
 ---
 
-### 🔗 Motor de Enlaces
-#### Crear Link Personalizado (PROTEGIDO)
-`POST /api/urls`
+#### 3. Perfil y Utilidades
+
+**H) Ver mi Perfil**
+- **URL**: `GET /api/users/me`
+- **Auth**: **SÍ (Bearer Token)**
+- **Respuesta**: Datos del usuario logueado.
+
+---
+
+### 🔗 Motor de Enlaces (Redirección vía Frontend)
+
+Para que el usuario final nunca vea el Backend, el flujo ahora es:
+1.  **POST `/api/urls`**: Genera un link que apunta al Front (ej: `http://localhost:3000/r/maria-terapias`).
+2.  **Frontend**: Debe capturar la ruta `/r/:code`.
+3.  **GET `/api/urls/resolve/{code}`**: El Front llama a este endpoint (Público) para obtener la `originalUrl`.
+4.  **Redirección**: El Front redirige al usuario a la URL obtenida.
+
+**Crear Link Personalizado (PROTEGIDO)**
+- **URL**: `POST /api/urls`
+- **Body**:
 ```json
 {
-  "originalUrl": "https://tu-web-frontend.com/profile/1",
-  "customAlias": "maria-terapeuta"
+  "originalUrl": "http://localhost:3000/perfil/maria",
+  "customAlias": "maria-terapias"
 }
 ```
-*Acceso al link via: `GET /r/maria-terapeuta`*
+
+**Resolver Redirección (PÚBLICO)**
+- **URL**: `GET /api/urls/resolve/{code}`
+- **Respuesta**: `{"originalUrl": "..."}`

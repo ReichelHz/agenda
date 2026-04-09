@@ -13,6 +13,7 @@ public class ShortUrlResponse {
     private Long id;
     private String originalUrl;
     private String shortCode;
+    private String shortUrl;
     private int clickCount;
     private LocalDateTime createdAt;
 
