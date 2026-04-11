@@ -26,6 +26,11 @@ public class Professional {
     private String phone;
     private LocalDate birthDate;
 
+    private java.math.BigDecimal homeVisitFee;
+    
+    @jakarta.persistence.Column(nullable = false, columnDefinition = "boolean default true")
+    private boolean allowsHomeVisit = true;
+
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
         name = "professional_services",

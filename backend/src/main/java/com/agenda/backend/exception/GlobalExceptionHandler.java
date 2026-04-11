@@ -70,6 +70,18 @@ public class GlobalExceptionHandler {
                 .body(Map.of("error", "Malformed request"));
     }
 
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Map<String, String>> handleIllegalArgument(IllegalArgumentException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of("error", ex.getMessage()));
+    }
+
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<Map<String, String>> handleIllegalState(IllegalStateException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of("error", ex.getMessage()));
+    }
+
     private boolean isLoginEndpoint(HttpServletRequest request) {
         String uri = request.getRequestURI();
         return uri != null && uri.endsWith("/api/auth/login");

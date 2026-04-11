@@ -6,6 +6,7 @@ import com.agenda.backend.exception.AuthenticationFailedException;
 import com.agenda.backend.exception.EmailAlreadyInUseException;
 import com.agenda.backend.exception.ResourceNotFoundException;
 import com.agenda.backend.model.*;
+import com.agenda.backend.repository.AppointmentRepository;
 import com.agenda.backend.repository.PatientRepository;
 import com.agenda.backend.repository.ProfessionalRepository;
 import com.agenda.backend.repository.UserRepository;
@@ -26,15 +27,18 @@ public class UserService implements UserDetailsService {
     private final UserRepository userRepository;
     private final PatientRepository patientRepository;
     private final ProfessionalRepository professionalRepository;
+    private final AppointmentRepository appointmentRepository;
     private final PasswordEncoder passwordEncoder;
 
     public UserService(UserRepository userRepository, 
                        PatientRepository patientRepository,
                        ProfessionalRepository professionalRepository,
+                       AppointmentRepository appointmentRepository,
                        PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.patientRepository = patientRepository;
         this.professionalRepository = professionalRepository;
+        this.appointmentRepository = appointmentRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -60,7 +64,10 @@ public class UserService implements UserDetailsService {
             patient.setUser(savedUser);
             patient.setPhone(request.getPhone());
             patient.setBirthDate(request.getBirthDate());
-            patientRepository.save(patient);
+            Patient savedPatient = patientRepository.save(patient);
+            
+            syncPastAppointments(normalizedEmail, savedPatient);
+            
         } else if (role == Role.PROFESSIONAL) {
             Professional professional = new Professional();
             professional.setUser(savedUser);
@@ -70,6 +77,14 @@ public class UserService implements UserDetailsService {
         }
 
         return savedUser;
+    }
+
+    private void syncPastAppointments(String email, Patient patient) {
+        List<Appointment> pastAppointments = appointmentRepository.findAllByPatientEmailIgnoreCaseAndPatientIsNull(email);
+        for (Appointment appointment : pastAppointments) {
+            appointment.setPatient(patient);
+            appointmentRepository.save(appointment);
+        }
     }
 
     public User login(LoginRequest request) {

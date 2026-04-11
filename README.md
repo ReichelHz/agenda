@@ -76,17 +76,29 @@ JWT_SECRET: Clave maestra (mínimo 64 caracteres).
 Ejecuta la aplicación:
 
 Bash
+```bash
 ./mvnw spring-boot:run
+```
+
+> [!TIP]
+> **Si tienes problemas en IntelliJ** (como que no reconozca el proyecto Maven o no veas el botón de "Run"), abre la **Terminal** integrada de IntelliJ y ejecuta:
+> - **Windows:** `mvnw spring-boot:run`
+> - **Mac/Linux:** `./mvnw spring-boot:run`
+> Esto forzará el inicio de la aplicación ignorando cualquier error de configuración visual del IDE.
 📌 Roadmap de Desarrollo
 - [x] **Infraestructura Base**: migración exitosa de MongoDB a PostgreSQL (Supabase) + Java 21.
 - [x] **Seguridad**: implementación de JWT, BCrypt y resolución de dependencias circulares.
 - [x] **Motor de Enlaces**: sistema `/r/{code}` con soporte para `customAlias`.
 - [x] **Módulo de Servicios**: entidad `Service` (gestión de precios y nombres).
 - [x] **Gestión de Agenda**: entidad `Availability` y acceso público a calendarios.
-- [ ] **Módulo de Reservas**: proceso de agendamiento (`Appointment`) y validación de horarios.
+- [x] **Módulo de Reservas**: proceso de agendamiento (`Appointment`) y validación de horarios.
 - [ ] **Notificaciones**: integración de servicio para alertas por email.
 - [ ] **Documentación**: integración de Swagger/OpenAPI.
 - [ ] **Despliegue**: dockerización y setup de CI/CD para producción.
+### 🚀 Próximos Pasos (V2)
+- [ ] **Excepciones de Agenda**: Bloqueo de fechas específicas y horarios "one-off" no recurrentes.
+- [ ] **Configuración por Servicio**: Opción de marcar servicios como "Solo Oficina" (aunque el profesional haga domicilios globalmente).
+- [ ] **Lógica de Persistencia en Domicilios**: Asegurar que al reactivar la opción global de domicilios, se respeten los servicios que fueron marcados manualmente como "No" (Evitar activaciones accidentales).
 
 ---
 
@@ -239,3 +251,103 @@ Para que el usuario final nunca vea el Backend, el flujo ahora es:
 **Resolver Redirección (PÚBLICO)**
 - **URL**: `GET /api/urls/resolve/{code}`
 - **Respuesta**: `{"originalUrl": "..."}`
+
+---
+
+## 🕒 Actualización 11/04: Evolución del Sistema de Citas y Domicilios
+
+Se ha implementado el núcleo completo de gestión de citas, soportando reservas de invitados, domicilios, sincronización de historial y agenda del profesional.
+
+### 🏠 1. Agenda de Direcciones (Solo Pacientes Logueados)
+
+Permite al paciente gestionar sus domicilios frecuentes para agendar rápido.
+
+**A) Listar mis direcciones**
+- **URL**: `GET /api/addresses`
+- **Auth**: **SÍ**
+- **Respuesta**: Lista de direcciones del paciente.
+
+**B) Agregar dirección**
+- **URL**: `POST /api/addresses`
+- **Body**:
+```json
+{
+  "label": "Casa Mamá",
+  "address": "Calle Falsa 123, Santiago"
+}
+```
+
+**C) Eliminar dirección**
+- **URL**: `DELETE /api/addresses/{id}`
+
+---
+
+### 📅 2. Sistema de Reservas (Público e Híbrido)
+
+El endpoint `POST /api/appointments` es inteligente. Si detecta Token, vincula la cita al usuario; si no, la crea como invitado.
+
+**D) Crear Reserva**
+- **URL**: `POST /api/appointments`
+- **Auth**: OPCIONAL
+- **Lógica de Precio**: El backend calcula el `totalPrice` sumando el precio del servicio + el recargo por domicilio (si aplica).
+- **Body**:
+```json
+{
+  "professionalId": 1,
+  "serviceId": 1,
+  "patientName": "Nombre Paciente",
+  "patientEmail": "correo@test.com",
+  "patientPhone": "+56912345678",
+  "date": "2024-11-20",
+  "time": "15:00:00",
+  "locationType": "HOME", // O "OFFICE"
+  "address": "Dirección completa si es HOME"
+}
+```
+- **Respuesta**: Incluye el `reservationCode` (Ej: `SL123456`). **IMPORTANTE:** El Front debe mostrar este código al usuario.
+
+**E) Ver mi historial (Paciente Logueado)**
+- **URL**: `GET /api/appointments/me`
+- **Respuesta**: Lista de todas las citas del paciente (incluye las sincronizadas).
+
+**F) Consulta por Código (Home Page - PÚBLICO)**
+- **URL**: `GET /api/appointments/by-code/{code}?email=...`
+- **Respuesta**: Detalle de la cita solo si el código y el email coinciden. Deben ser entregados por el usuario.
+
+**G) Anular/Confirmar Cita (PÚBLICO)**
+- **URL**: `PATCH /api/appointments/{code}/status?email=...&status=STATUS`
+- **Estados Permitidos**: `CONFIRMED`, `CANCELLED` (Cualquier otro estado dará error).
+
+---
+
+### 💼 3. Panel del Profesional
+
+**H) Ver mi Agenda**
+- **URL**: `GET /api/appointments/professional`
+- **Auth**: **SÍ (Rol Profesional)**
+
+**I) Gestión de Cita por ID**
+- **URL**: `PATCH /api/appointments/{id}/status-admin?status=CONFIRMED`
+- **Uso**: El profesional usa el ID interno que ve en su agenda. No requiere el email del paciente.
+
+**J) Configuración de Domicilios**
+- **URL**: `PATCH /api/professional/settings`
+- **Body**:
+```json
+{
+  "allowsHomeVisit": true,
+  "homeVisitFee": 5000
+}
+```
+- **Nota Crítica**: Si un profesional activa `allowsHomeVisit: true` pero deja la tarifa en `null`, el sistema **bloqueará** cualquier intento de agendar cita tipo `HOME` hasta que defina un monto (puede ser `0`).
+
+---
+
+### 🧪 Guía de Pruebas Rápidas
+
+1.  **Sincronización:** Reserva como invitado usando un email. Luego regístrate con ese mismo email. Al llamar a `/api/appointments/me`, verás que tu reserva "invitada" ahora es parte de tu historial oficial.
+2.  **Doble Reserva:** El sistema arrojará error si intentas agendar dos citas con el mismo profesional en el mismo bloque horario (a menos que una esté `CANCELLED`).
+3.  **Bloqueo ON/OFF:** Si el profesional deshabilita `allowsHomeVisit`, cualquier intento de agendar cita tipo `HOME` con él será rechazado por el servidor.
+4.  **Ubicación y Precio:** Si eliges `HOME`, la dirección es obligatoria. El servidor sumará automáticamente el `homeVisitFee` al precio base del servicio.
+5.  **Validación de Configuración:** Un agendamiento `HOME` fallará si el profesional tiene `allowsHomeVisit: false` O si no ha configurado su `homeVisitFee` (aparece como nulo).
+6.  **Estados Públicos:** El flujo `/api/appointments/{code}/status` solo permite los estados `CONFIRMED` (por si el paciente confirma asistencia) y `CANCELLED` (anulación). El profesional, vía `/status-admin`, puede usar todos (ej: `COMPLETED`).
