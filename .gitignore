@@ -31,3 +31,12 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Node ###
+node_modules/
+
+### Env files ###
+.env
+.env.local
+.env.*.local
+!.env.example
