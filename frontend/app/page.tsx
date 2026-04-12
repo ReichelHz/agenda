@@ -216,7 +216,7 @@ export default async function LandingPage({
                       <div className="flex items-center gap-2.5 bg-muted/50 rounded-xl px-3 py-2.5">
                         <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                           <span className="text-xs font-bold text-primary">
-                            {service.professional.name
+                            {service.professional?.name
                               .split(' ')
                               .map((n) => n[0])
                               .slice(0, 2)
@@ -227,7 +227,7 @@ export default async function LandingPage({
                         <div className="min-w-0">
                           <p className="text-xs text-muted-foreground leading-none mb-0.5">Profesional a cargo</p>
                           <p className="text-sm font-semibold text-foreground truncate">
-                            {service.professional.name}
+                            {service.professional?.name}
                           </p>
                         </div>
                       </div>
