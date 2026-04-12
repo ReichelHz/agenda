@@ -18,16 +18,19 @@ public class AppointmentService {
     private final ProfessionalRepository professionalRepository;
     private final ServiceRepository serviceRepository;
     private final PatientRepository patientRepository;
+    private final MailService mailService;
     private final SecureRandom random = new SecureRandom();
 
     public AppointmentService(AppointmentRepository appointmentRepository,
                               ProfessionalRepository professionalRepository,
                               ServiceRepository serviceRepository,
-                              PatientRepository patientRepository) {
+                              PatientRepository patientRepository,
+                              MailService mailService) {
         this.appointmentRepository = appointmentRepository;
         this.professionalRepository = professionalRepository;
         this.serviceRepository = serviceRepository;
         this.patientRepository = patientRepository;
+        this.mailService = mailService;
     }
 
     @Transactional
@@ -82,14 +85,16 @@ public class AppointmentService {
 
         appointment.setReservationCode(generateUniqueReservationCode());
 
-        return appointmentRepository.save(appointment);
+        Appointment savedAppointment = appointmentRepository.save(appointment);
+        mailService.sendAppointmentConfirmationEmail(buildEmailSnapshot(savedAppointment));
+        return savedAppointment;
     }
 
     public Appointment findByCodeAndEmail(String code, String email) {
         Appointment appointment = appointmentRepository.findByReservationCode(code)
                 .orElseThrow(() -> new ResourceNotFoundException("Cita no encontrada con ese código"));
 
-        if (!appointment.getPatientEmail().equalsIgnoreCase(email.trim())) {
+        if (!emailsMatch(appointment.getPatientEmail(), email)) {
             throw new IllegalArgumentException("El email no coincide con el código de reserva");
         }
         return appointment;
@@ -101,8 +106,13 @@ public class AppointmentService {
             throw new IllegalArgumentException("Solo se permite confirmar o anular la cita");
         }
         Appointment appointment = findByCodeAndEmail(code, email);
+        AppointmentStatus previousStatus = appointment.getStatus();
         appointment.setStatus(newStatus);
-        return appointmentRepository.save(appointment);
+        Appointment savedAppointment = appointmentRepository.save(appointment);
+        if (newStatus == AppointmentStatus.CANCELLED && previousStatus != AppointmentStatus.CANCELLED) {
+            mailService.sendAppointmentCancellationEmail(buildEmailSnapshot(savedAppointment));
+        }
+        return savedAppointment;
     }
 
     @Transactional
@@ -114,8 +124,13 @@ public class AppointmentService {
             throw new IllegalArgumentException("No tienes permiso para gestionar esta cita");
         }
 
+        AppointmentStatus previousStatus = appointment.getStatus();
         appointment.setStatus(newStatus);
-        return appointmentRepository.save(appointment);
+        Appointment savedAppointment = appointmentRepository.save(appointment);
+        if (newStatus == AppointmentStatus.CANCELLED && previousStatus != AppointmentStatus.CANCELLED) {
+            mailService.sendAppointmentCancellationEmail(buildEmailSnapshot(savedAppointment));
+        }
+        return savedAppointment;
     }
 
     public java.util.List<Appointment> listByPatientId(Long patientId) {
@@ -135,5 +150,38 @@ public class AppointmentService {
             exists = appointmentRepository.existsByReservationCode(code); 
         } while (exists);
         return code;
+    }
+
+    private EmailAppointmentSnapshot buildEmailSnapshot(Appointment source) {
+        if (source == null) {
+            return new EmailAppointmentSnapshot(null, null, null, null, null);
+        }
+
+        String professionalName = null;
+        if (source.getProfessional() != null && source.getProfessional().getUser() != null) {
+            professionalName = normalizeNullable(source.getProfessional().getUser().getName());
+        }
+
+        return new EmailAppointmentSnapshot(
+                normalizeNullable(source.getPatientEmail()),
+                professionalName,
+                source.getDate(),
+                source.getTime(),
+                normalizeNullable(source.getReservationCode())
+        );
+    }
+
+    private String normalizeNullable(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private boolean emailsMatch(String leftEmail, String rightEmail) {
+        String normalizedLeft = normalizeNullable(leftEmail);
+        String normalizedRight = normalizeNullable(rightEmail);
+        return normalizedLeft != null && normalizedLeft.equalsIgnoreCase(normalizedRight);
     }
 }

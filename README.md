@@ -65,6 +65,11 @@ Para mantener el proyecto en un entorno gratuito y profesional:
 Para el envío de notificaciones de citas sin costo:
 - **Proveedor**: [Brevo](https://www.brevo.com/) (vía SMTP o API) o **Gmail SMTP** (requiere App Password).
 - **Lógica**: Implementación mediante `spring-boot-starter-mail`.
+- **Confirmación de citas**: El backend envía el correo de confirmación de forma asíncrona con `@Async`.
+- **Configuración SMTP**: Se toma desde `application.yaml` vía variables de entorno, compatible con Gmail SMTP o Brevo SMTP.
+- Sistema de email completamente funcional en entorno de desarrollo
+- Validación de credenciales SMTP exitosa
+- Envío automático de confirmación de citas al crear Appointment
 
 ---
 
@@ -82,7 +87,8 @@ Configura las variables de entorno en tu sistema o en el application.yaml:
 SPRING_DATASOURCE_URL: URL de conexión a la base de datos.
 SPRING_DATASOURCE_USERNAME / PASSWORD.
 JWT_SECRET: Clave maestra (mínimo 64 caracteres).
-
+MAIL_USERNAME: correo SMTP
+MAIL_PASSWORD: app password de Gmail
 Ejecuta la aplicación:
 
 Bash
@@ -102,13 +108,14 @@ Bash
 - [x] **Módulo de Servicios**: entidad `Service` (gestión de precios y nombres).
 - [x] **Gestión de Agenda**: entidad `Availability` y acceso público a calendarios.
 - [x] **Módulo de Reservas**: proceso de agendamiento (`Appointment`) y validación de horarios.
-- [ ] **Notificaciones**: integración de servicio para alertas por email.
+- [x] **Notificaciones**: integración de servicio para alertas por email.
 - [x] **Documentación**: integración de Swagger/OpenAPI.
 - [ ] **Despliegue**: dockerización y setup de CI/CD para producción.
 ### 🚀 Próximos Pasos (V2)
 - [ ] **Excepciones de Agenda**: Bloqueo de fechas específicas y horarios "one-off" no recurrentes.
 - [ ] **Configuración por Servicio**: Opción de marcar servicios como "Solo Oficina" (aunque el profesional haga domicilios globalmente).
 - [ ] **Lógica de Persistencia en Domicilios**: Asegurar que al reactivar la opción global de domicilios, se respeten los servicios que fueron marcados manualmente como "No" (Evitar activaciones accidentales).
+- [ ] **Recordatorios automáticos 24h antes de la cita**: Envío de emails o notificaciones programadas antes de la fecha de la cita.
 
 ---
 
@@ -352,7 +359,11 @@ El endpoint `POST /api/appointments` es inteligente. Si detecta Token, vincula l
 - **Nota Crítica**: Si un profesional activa `allowsHomeVisit: true` pero deja la tarifa en `null`, el sistema **bloqueará** cualquier intento de agendar cita tipo `HOME` hasta que defina un monto (puede ser `0`).
 
 ---
-
+### 📧 Sistema de Emails
+Envío automático de confirmación de citas
+Integración SMTP Gmail funcional
+Manejo de errores y logs
+Ejecución asíncrona con @Async
 ### 🧪 Guía de Pruebas Rápidas
 
 1.  **Sincronización:** Reserva como invitado usando un email. Luego regístrate con ese mismo email. Al llamar a `/api/appointments/me`, verás que tu reserva "invitada" ahora es parte de tu historial oficial.
