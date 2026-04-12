@@ -22,8 +22,12 @@ public class ShortUrlResponse {
         response.setId(shortUrl.getId());
         response.setOriginalUrl(shortUrl.getOriginalUrl());
         response.setShortCode(shortUrl.getShortCode());
+
+        response.setShortUrl("/r/" + shortUrl.getShortCode());
+
         response.setClickCount(shortUrl.getClickCount());
         response.setCreatedAt(shortUrl.getCreatedAt());
+
         return response;
     }
 }

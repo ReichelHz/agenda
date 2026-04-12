@@ -14,6 +14,10 @@ Lombok: Reducción de código repetitivo (Boilerplate).
 
 JUnit 5 & MockMvc: Pruebas de integración automatizadas para el flujo de seguridad.
 
+Swagger/OpenAPI: Documentación automática de la API REST.
+
+---
+
 🔐 Seguridad y Acceso
 La API implementa un modelo de seguridad basado en Roles (PATIENT, PROFESSIONAL, ADMIN) y Tokens JWT:
 
@@ -29,11 +33,15 @@ Privacidad: Implementación de `/api/users/me` para asegurar que cada usuario ac
 | **PROFESSIONAL** | Terapeuta con perfil público que gestiona su propia agenda y servicios. |
 | **ADMIN** | Gestión global del sistema y moderación de servicios. |
 
+---
+
 ### 🛣️ Endpoints de Interés
 - `POST /api/urls`: Acortador con soporte para `customAlias` (ej: `/r/maria-terapeuta`).
 - `GET /api/availabilities/professional/{id}`: Consulta de agenda pública.
 - `GET /api/services`: Catálogo público de terapias.
 - `GET /api/users/me`: Perfil del usuario actual.
+
+---
 
 ### 🏗️ Arquitectura de Datos
 El sistema utiliza una estructura de **herencia lógica** vinculada al usuario:
@@ -50,6 +58,8 @@ Para mantener el proyecto en un entorno gratuito y profesional:
     * *Nota*: Configurar `JAVA_TOOL_OPTIONS: -Xmx384m` para optimizar la RAM.
 - **Base de Datos**: [Supabase](https://supabase.com/) (PostgreSQL).
 - **Frontend**: [Vercel](https://vercel.com/).
+
+---
 
 ### 📧 Integración de Emails
 Para el envío de notificaciones de citas sin costo:
@@ -93,7 +103,7 @@ Bash
 - [x] **Gestión de Agenda**: entidad `Availability` y acceso público a calendarios.
 - [x] **Módulo de Reservas**: proceso de agendamiento (`Appointment`) y validación de horarios.
 - [ ] **Notificaciones**: integración de servicio para alertas por email.
-- [ ] **Documentación**: integración de Swagger/OpenAPI.
+- [x] **Documentación**: integración de Swagger/OpenAPI.
 - [ ] **Despliegue**: dockerización y setup de CI/CD para producción.
 ### 🚀 Próximos Pasos (V2)
 - [ ] **Excepciones de Agenda**: Bloqueo de fechas específicas y horarios "one-off" no recurrentes.
