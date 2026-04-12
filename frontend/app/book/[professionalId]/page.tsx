@@ -62,7 +62,7 @@ export default function BookPage({
 
   useEffect(() => {
     if (isNaN(profId)) return;
-    Promise.all([availabilitiesApi.byProfessional(profId), servicesApi.list()])
+    Promise.all([availabilitiesApi.byProfessional(profId), servicesApi.byProfessional(profId)])
       .then(([avs, svs]) => {
         setAvailabilities(avs);
         setServices(svs);

@@ -10,12 +10,12 @@ async function proxy(
   const searchParams = request.nextUrl.searchParams.toString();
   const url = `${BACKEND_URL}/api/${pathname}${searchParams ? `?${searchParams}` : ''}`;
 
-  const token = request.cookies.get('auth_token')?.value;
+  const authHeader = request.headers.get('Authorization');
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
   };
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
+  if (authHeader) {
+    headers['Authorization'] = authHeader;
   }
 
   const hasBody = !['GET', 'HEAD'].includes(request.method);

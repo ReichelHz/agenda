@@ -6,11 +6,9 @@ import { cn } from '@/lib/utils';
 import type { LucideIcon } from 'lucide-react';
 import {
   Search,
-  Star,
   ArrowRight,
   CheckCircle2,
   Leaf,
-  CalendarCheck,
   ShieldCheck,
   Syringe,
   Wind,
@@ -21,137 +19,64 @@ import {
   HandHeart,
   CalendarDays,
   Activity,
+  ChevronLeft,
+  ChevronRight,
+  CalendarCheck,
 } from 'lucide-react';
 
-async function getServices(): Promise<Service[]> {
-  try {
-    return await servicesApi.list();
-  } catch {
-    return [];
-  }
-}
+type CatalogStyle = { Icon: LucideIcon; bg: string; iconColor: string };
 
-type CatalogItem = {
-  name: string;
-  Icon: LucideIcon;
-  tag?: string;
-  desc: string;
-  rating: number;
-  reviews: number;
-  price: number;
-  bg: string;
-  iconColor: string;
-};
-
-const CATALOG: CatalogItem[] = [
-  {
-    name: 'Acupuntura',
-    Icon: Syringe,
-    tag: 'Más popular',
-    desc: 'Reequilibra tu energía vital mediante agujas en puntos estratégicos.',
-    rating: 4.9,
-    reviews: 128,
-    price: 6500,
-    bg: 'bg-teal-50',
-    iconColor: 'text-teal-600',
-  },
-  {
-    name: 'Ventosas',
-    Icon: Wind,
-    tag: 'Tendencia',
-    desc: 'Terapia de succión que alivia tensiones musculares y mejora la circulación.',
-    rating: 4.8,
-    reviews: 94,
-    price: 5000,
-    bg: 'bg-sky-50',
-    iconColor: 'text-sky-600',
-  },
-  {
-    name: 'Auriculoterapia',
-    Icon: Ear,
-    desc: 'Estimulación de puntos reflejos en el pabellón auricular para tratar diversas dolencias.',
-    rating: 4.7,
-    reviews: 76,
-    price: 4500,
-    bg: 'bg-purple-50',
-    iconColor: 'text-purple-600',
-  },
-  {
-    name: 'Reiki',
-    Icon: Sparkles,
-    desc: 'Canalización de energía universal para promover la sanación y el bienestar.',
-    rating: 4.9,
-    reviews: 112,
-    price: 5500,
-    bg: 'bg-amber-50',
-    iconColor: 'text-amber-600',
-  },
-  {
-    name: 'Reflexología',
-    Icon: Footprints,
-    desc: 'Masajes terapéuticos en pies y manos que conectan con órganos y sistemas del cuerpo.',
-    rating: 4.8,
-    reviews: 88,
-    price: 4800,
-    bg: 'bg-green-50',
-    iconColor: 'text-green-600',
-  },
-  {
-    name: 'Moxibustión',
-    Icon: Flame,
-    desc: 'Aplicación de calor medicinal con artemisa en puntos de acupuntura específicos.',
-    rating: 4.7,
-    reviews: 55,
-    price: 5200,
-    bg: 'bg-orange-50',
-    iconColor: 'text-orange-600',
-  },
-  {
-    name: 'Fitoterapia',
-    Icon: Leaf,
-    desc: 'Tratamiento natural con plantas medicinales seleccionadas para tu bienestar.',
-    rating: 4.6,
-    reviews: 42,
-    price: 3800,
-    bg: 'bg-emerald-50',
-    iconColor: 'text-emerald-600',
-  },
-  {
-    name: 'Masajes Terapéuticos',
-    Icon: HandHeart,
-    desc: 'Alivio muscular profundo y relajación total con técnicas especializadas.',
-    rating: 4.9,
-    reviews: 201,
-    price: 5800,
-    bg: 'bg-rose-50',
-    iconColor: 'text-rose-600',
-  },
+const STYLES: CatalogStyle[] = [
+  { Icon: Syringe,    bg: 'bg-teal-50',    iconColor: 'text-teal-600'   },
+  { Icon: Wind,       bg: 'bg-sky-50',     iconColor: 'text-sky-600'    },
+  { Icon: Ear,        bg: 'bg-purple-50',  iconColor: 'text-purple-600' },
+  { Icon: Sparkles,   bg: 'bg-amber-50',   iconColor: 'text-amber-600'  },
+  { Icon: Footprints, bg: 'bg-green-50',   iconColor: 'text-green-600'  },
+  { Icon: Flame,      bg: 'bg-orange-50',  iconColor: 'text-orange-600' },
+  { Icon: Leaf,       bg: 'bg-emerald-50', iconColor: 'text-emerald-600'},
+  { Icon: HandHeart,  bg: 'bg-rose-50',    iconColor: 'text-rose-600'   },
 ];
 
 type CategoryItem = { label: string; Icon: LucideIcon };
 const CATEGORIES: CategoryItem[] = [
-  { label: 'Todo', Icon: Activity },
-  { label: 'Acupuntura', Icon: Syringe },
-  { label: 'Ventosas', Icon: Wind },
-  { label: 'Auricular', Icon: Ear },
-  { label: 'Energética', Icon: Sparkles },
-  { label: 'Masajes', Icon: HandHeart },
-  { label: 'Plantas', Icon: Leaf },
+  { label: 'Todo',       Icon: Activity  },
+  { label: 'Acupuntura', Icon: Syringe   },
+  { label: 'Ventosas',   Icon: Wind      },
+  { label: 'Auricular',  Icon: Ear       },
+  { label: 'Energética', Icon: Sparkles  },
+  { label: 'Masajes',    Icon: HandHeart },
+  { label: 'Plantas',    Icon: Leaf      },
 ];
 
-export default async function LandingPage() {
-  const apiServices = await getServices();
+// Mapeo pill label → término de búsqueda para el backend
+const CATEGORY_SEARCH: Record<string, string> = {
+  'Acupuntura': 'acupuntura',
+  'Ventosas':   'ventosas',
+  'Auricular':  'auricular',
+  'Energética': 'reiki',
+  'Masajes':    'masaje',
+  'Plantas':    'fitoterapia',
+};
 
-  const items: CatalogItem[] =
-    apiServices.length > 0
-      ? apiServices.map((s: Service, i: number) => ({
-          ...CATALOG[i % CATALOG.length],
-          name: s.name,
-          desc: s.description,
-          price: s.price,
-          tag: i === 0 ? 'Más popular' : undefined,
-        }))
-      : CATALOG;
+async function fetchServices(page: number, search: string) {
+  try {
+    const data = await servicesApi.list(page, 6, search);
+    return { items: data.content, totalPages: data.totalPages, currentPage: data.number };
+  } catch {
+    return { items: [] as Service[], totalPages: 0, currentPage: 0 };
+  }
+}
+
+export default async function LandingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string; category?: string }>;
+}) {
+  const { page: pageParam, category } = await searchParams;
+  const currentPage = Math.max(0, parseInt(pageParam ?? '0', 10) || 0);
+  const search = category ? (CATEGORY_SEARCH[category] ?? category) : '';
+  const { items, totalPages } = await fetchServices(currentPage, search);
+  const validItems = items.filter((s) => s.professional?.id);
 
   return (
     <div className="min-h-screen">
@@ -179,7 +104,6 @@ export default async function LandingPage() {
             los mejores profesionales. Fácil, rápido y sin turnos telefónicos.
           </p>
 
-          {/* Search bar */}
           <div className="max-w-2xl mx-auto mb-8">
             <div className="bg-white rounded-2xl shadow-2xl p-1.5 flex items-center gap-2">
               <div className="flex-1 flex items-center gap-3 pl-4">
@@ -199,13 +123,8 @@ export default async function LandingPage() {
             </div>
           </div>
 
-          {/* Social proof */}
           <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-teal-200">
-            {[
-              '+500 sesiones realizadas',
-              'Profesionales certificados',
-              'Confirmación por email',
-            ].map((t) => (
+            {['+500 sesiones realizadas', 'Profesionales certificados', 'Confirmación por email'].map((t) => (
               <span key={t} className="flex items-center gap-1.5">
                 <CheckCircle2 className="w-4 h-4 text-teal-300" />
                 {t}
@@ -219,86 +138,174 @@ export default async function LandingPage() {
       <section className="border-b border-border bg-white sticky top-16 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex items-center gap-2 py-3 overflow-x-auto [scrollbar-width:none]">
-            {CATEGORIES.map(({ label, Icon }, i) => (
-              <button
-                key={label}
-                className={cn(
-                  'shrink-0 flex items-center gap-1.5 px-4 py-1.5 rounded-full border text-sm whitespace-nowrap transition-colors',
-                  i === 0
-                    ? 'border-foreground text-foreground font-medium bg-foreground/5'
-                    : 'border-border text-muted-foreground hover:border-foreground hover:text-foreground'
-                )}
-              >
-                <Icon className="w-3.5 h-3.5" />
-                {label}
-              </button>
-            ))}
+            {CATEGORIES.map(({ label, Icon }) => {
+              const isActive = label === 'Todo' ? !category : category === label;
+              const href = label === 'Todo' ? '/?page=0' : `/?category=${encodeURIComponent(label)}&page=0`;
+              return (
+                <Link
+                  key={label}
+                  href={href}
+                  className={cn(
+                    'shrink-0 flex items-center gap-1.5 px-4 py-1.5 rounded-full border text-sm whitespace-nowrap transition-colors',
+                    isActive
+                      ? 'border-foreground text-foreground font-medium bg-foreground/5'
+                      : 'border-border text-muted-foreground hover:border-foreground hover:text-foreground'
+                  )}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                  {label}
+                </Link>
+              );
+            })}
           </div>
         </div>
       </section>
 
-      {/* ── THERAPY GRID ── */}
+      {/* ── SERVICE GRID ── */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {items.map((item) => {
-            const { Icon } = item;
-            return (
-              <div key={item.name} className="group cursor-pointer">
-                {/* Card image area */}
-                <div
-                  className={cn(
-                    'relative rounded-2xl h-52 flex items-center justify-center mb-3 overflow-hidden transition-transform group-hover:scale-[1.02] duration-300',
-                    item.bg
-                  )}
-                >
-                  <Icon className={cn('w-20 h-20', item.iconColor)} strokeWidth={1.25} />
-
-                  {item.tag && (
-                    <div className="absolute top-3 left-3">
-                      <Badge className="bg-white text-foreground text-xs font-semibold shadow-sm border-0">
-                        {item.tag}
-                      </Badge>
-                    </div>
-                  )}
-
-                  <button className="absolute top-3 right-3 w-8 h-8 bg-white/80 hover:bg-white rounded-full flex items-center justify-center transition-colors group/heart">
-                    <svg
-                      className="w-4 h-4 text-foreground group-hover/heart:text-rose-500 transition-colors"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
+        {validItems.length === 0 ? (
+          <div className="text-center py-20 border-2 border-dashed border-border rounded-2xl">
+            <div className="w-16 h-16 bg-muted rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <CalendarCheck className="w-7 h-7 text-muted-foreground" />
+            </div>
+            <h3 className="font-semibold text-foreground mb-2">No hay servicios disponibles aún</h3>
+            <p className="text-muted-foreground text-sm">
+              Pronto se publicarán nuevos servicios con sus profesionales.
+            </p>
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {validItems.map((service, i) => {
+                const style = STYLES[i % STYLES.length];
+                const { Icon } = style;
+                const bookHref = `/book/${service.professional!.id}`;
+                return (
+                  <div
+                    key={service.id}
+                    className="group flex flex-col rounded-2xl border border-border bg-white overflow-hidden hover:shadow-md transition-shadow duration-300"
+                  >
+                    <div
+                      className={cn(
+                        'relative flex items-center justify-center h-44 transition-transform group-hover:scale-[1.02] duration-300',
+                        style.bg
+                      )}
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                      />
-                    </svg>
-                  </button>
-                </div>
+                      <Icon className={cn('w-16 h-16', style.iconColor)} strokeWidth={1.25} />
+                      {i === 0 && currentPage === 0 && (
+                        <div className="absolute top-3 left-3">
+                          <Badge className="bg-white text-foreground text-xs font-semibold shadow-sm border-0">
+                            Más popular
+                          </Badge>
+                        </div>
+                      )}
+                    </div>
 
-                {/* Info */}
-                <div className="space-y-1">
-                  <div className="flex items-start justify-between gap-2">
-                    <h3 className="font-semibold text-foreground text-sm">{item.name}</h3>
-                    <div className="flex items-center gap-0.5 shrink-0">
-                      <Star className="w-3.5 h-3.5 fill-foreground text-foreground" />
-                      <span className="text-sm font-medium">{item.rating}</span>
+                    <div className="flex flex-col flex-1 p-5 gap-3">
+                      <div>
+                        <h3 className="font-semibold text-foreground text-base leading-tight mb-1">
+                          {service.name}
+                        </h3>
+                        {service.description && (
+                          <p className="text-muted-foreground text-sm leading-relaxed line-clamp-3">
+                            {service.description}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2.5 bg-muted/50 rounded-xl px-3 py-2.5">
+                        <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                          <span className="text-xs font-bold text-primary">
+                            {service.professional.name
+                              .split(' ')
+                              .map((n) => n[0])
+                              .slice(0, 2)
+                              .join('')
+                              .toUpperCase()}
+                          </span>
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs text-muted-foreground leading-none mb-0.5">Profesional a cargo</p>
+                          <p className="text-sm font-semibold text-foreground truncate">
+                            {service.professional.name}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-1">
+                        <span className="text-sm font-semibold text-foreground">
+                          ${Number(service.price).toLocaleString()}
+                          <span className="font-normal text-muted-foreground"> / sesión</span>
+                        </span>
+                      </div>
+
+                      <Link
+                        href={bookHref}
+                        className={cn(
+                          buttonVariants({ size: 'sm' }),
+                          'w-full rounded-xl text-xs font-semibold mt-1'
+                        )}
+                      >
+                        <CalendarCheck className="w-3.5 h-3.5 mr-1.5" />
+                        Reservar una cita ahora
+                      </Link>
                     </div>
                   </div>
-                  <p className="text-muted-foreground text-sm leading-snug line-clamp-2">
-                    {item.desc}
-                  </p>
-                  <p className="text-xs text-muted-foreground">{item.reviews} reseñas</p>
-                  <p className="text-sm text-foreground pt-0.5">
-                    <span className="font-semibold">${item.price.toLocaleString()}</span> / sesión
-                  </p>
+                );
+              })}
+            </div>
+
+            {/* ── PAGINATOR ── */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-2 mt-10">
+                {currentPage > 0 ? (
+                  <Link
+                    href={`?${new URLSearchParams({ ...(category ? { category } : {}), page: String(currentPage - 1) })}`}
+                    className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'rounded-lg gap-1')}
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                    Anterior
+                  </Link>
+                ) : (
+                  <span className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'rounded-lg gap-1 opacity-40 pointer-events-none')}>
+                    <ChevronLeft className="w-4 h-4" />
+                    Anterior
+                  </span>
+                )}
+
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: totalPages }, (_, i) => (
+                    <Link
+                      key={i}
+                      href={`?${new URLSearchParams({ ...(category ? { category } : {}), page: String(i) })}`}
+                      className={cn(
+                        buttonVariants({ variant: i === currentPage ? 'default' : 'outline', size: 'sm' }),
+                        'rounded-lg w-9 h-9 p-0'
+                      )}
+                    >
+                      {i + 1}
+                    </Link>
+                  ))}
                 </div>
+
+                {currentPage < totalPages - 1 ? (
+                  <Link
+                    href={`?${new URLSearchParams({ ...(category ? { category } : {}), page: String(currentPage + 1) })}`}
+                    className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'rounded-lg gap-1')}
+                  >
+                    Siguiente
+                    <ChevronRight className="w-4 h-4" />
+                  </Link>
+                ) : (
+                  <span className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'rounded-lg gap-1 opacity-40 pointer-events-none')}>
+                    Siguiente
+                    <ChevronRight className="w-4 h-4" />
+                  </span>
+                )}
               </div>
-            );
-          })}
-        </div>
+            )}
+          </>
+        )}
       </section>
 
       {/* ── HOW IT WORKS ── */}
@@ -313,24 +320,9 @@ export default async function LandingPage() {
 
           <div className="grid sm:grid-cols-3 gap-10">
             {[
-              {
-                Icon: Search,
-                step: '01',
-                title: 'Explorá los servicios',
-                desc: 'Encontrá el tratamiento que necesitás entre nuestra variedad de terapias alternativas.',
-              },
-              {
-                Icon: CalendarDays,
-                step: '02',
-                title: 'Elegí fecha y horario',
-                desc: 'Consultá la disponibilidad del profesional y seleccioná el turno que mejor te quede.',
-              },
-              {
-                Icon: ShieldCheck,
-                step: '03',
-                title: 'Recibí confirmación',
-                desc: 'Te llega un email con todos los detalles de tu cita. Sin sorpresas.',
-              },
+              { Icon: Search,      step: '01', title: 'Explorá los servicios',  desc: 'Encontrá el tratamiento que necesitás entre nuestra variedad de terapias alternativas.' },
+              { Icon: CalendarDays,step: '02', title: 'Elegí fecha y horario',  desc: 'Consultá la disponibilidad del profesional y seleccioná el turno que mejor te quede.' },
+              { Icon: ShieldCheck, step: '03', title: 'Recibí confirmación',    desc: 'Te llega un email con todos los detalles de tu cita. Sin sorpresas.' },
             ].map(({ Icon, step, title, desc }) => (
               <div key={step} className="flex flex-col items-center text-center">
                 <div className="relative mb-5">
@@ -363,17 +355,11 @@ export default async function LandingPage() {
             invitado sin crear una cuenta.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Link
-              href="/register"
-              className={cn(buttonVariants({ size: 'lg' }), 'rounded-full px-8')}
-            >
+            <Link href="/register" className={cn(buttonVariants({ size: 'lg' }), 'rounded-full px-8')}>
               Crear cuenta gratis
               <ArrowRight className="w-4 h-4 ml-1" />
             </Link>
-            <Link
-              href="/login"
-              className={cn(buttonVariants({ variant: 'outline', size: 'lg' }), 'rounded-full px-8')}
-            >
+            <Link href="/login" className={cn(buttonVariants({ variant: 'outline', size: 'lg' }), 'rounded-full px-8')}>
               Iniciar sesión
             </Link>
           </div>

@@ -19,6 +19,14 @@ public class Service {
     @Column(nullable = false)
     private String name;
 
+    @Column(length = 1000)
+    private String description;
+
     private Integer durationMinutes;
+    
     private BigDecimal price;
+
+    @ManyToOne
+    @JoinColumn(name = "professional_id")
+    private User professional;
 }

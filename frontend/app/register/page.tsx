@@ -43,7 +43,7 @@ function RegisterForm() {
     setForm((p) => ({ ...p, [field]: value }));
   }
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.ChangeEvent<HTMLFormElement>) {
     e.preventDefault();
     setError('');
     setLoading(true);
@@ -59,11 +59,7 @@ function RegisterForm() {
       await login(form.email, form.password);
       router.push('/dashboard');
     } catch (err: unknown) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : 'Error al registrar. Probá con otro email.'
-      );
+      setError(err instanceof Error ? err.message : 'El mail ya está registrado');
     } finally {
       setLoading(false);
     }

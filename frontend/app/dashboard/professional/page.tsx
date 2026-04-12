@@ -55,7 +55,7 @@ export default function ProfessionalDashboard() {
   // Services state
   const [services, setServices] = useState<Service[]>([]);
   const [svLoading, setSvLoading] = useState(true);
-  const [svForm, setSvForm] = useState({ name: '', description: '', price: '' });
+  const [svForm, setSvForm] = useState({ name: '', description: '', price: '', duration: '' });
   const [svSaving, setSvSaving] = useState(false);
   const [svError, setSvError] = useState('');
   const [svSuccess, setSvSuccess] = useState('');
@@ -72,12 +72,13 @@ export default function ProfessionalDashboard() {
   }, [user]);
 
   useEffect(() => {
+    if (!user) return;
     servicesApi
-      .list()
+      .byProfessional(user.id)
       .then(setServices)
       .catch(() => setServices([]))
       .finally(() => setSvLoading(false));
-  }, []);
+  }, [user]);
 
   async function handleAddAvailability(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -104,6 +105,7 @@ export default function ProfessionalDashboard() {
 
   async function handleAddService(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (!user) return;
     setSvError('');
     setSvSuccess('');
     setSvSaving(true);
@@ -112,9 +114,11 @@ export default function ProfessionalDashboard() {
         name: svForm.name,
         description: svForm.description,
         price: parseFloat(svForm.price),
+        durationMinutes: svForm.duration ? parseInt(svForm.duration) : undefined,
+        professional: { id: user.id },
       });
       setServices((prev) => [...prev, created]);
-      setSvForm({ name: '', description: '', price: '' });
+      setSvForm({ name: '', description: '', price: '', duration: '' });
       setSvSuccess('Servicio creado correctamente');
       setTimeout(() => setSvSuccess(''), 4000);
     } catch (err: unknown) {
@@ -370,24 +374,37 @@ export default function ProfessionalDashboard() {
                   />
                 </div>
 
-                <div className="space-y-1.5">
-                  <Label className="text-sm font-medium">Precio ($) *</Label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
-                      $
-                    </span>
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium">Precio ($) *</Label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+                        $
+                      </span>
+                      <Input
+                        type="number"
+                        required
+                        min="0"
+                        step="0.01"
+                        value={svForm.price}
+                        onChange={(e) => setSvForm((p) => ({ ...p, price: e.target.value }))}
+                        placeholder="5000"
+                        className="pl-7 h-11"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium">Duración (minutos)</Label>
                     <Input
                       type="number"
-                      required
                       min="0"
-                      step="0.01"
-                      value={svForm.price}
-                      onChange={(e) => setSvForm((p) => ({ ...p, price: e.target.value }))}
-                      placeholder="5000"
-                      className="pl-7 h-11"
+                      step="15"
+                      value={svForm.duration}
+                      onChange={(e) => setSvForm((p) => ({ ...p, duration: e.target.value }))}
+                      placeholder="60"
+                      className="h-11"
                     />
                   </div>
-                </div>
 
                 {svError && (
                   <p className="text-destructive text-sm bg-destructive/8 border border-destructive/20 px-3 py-2 rounded-lg">

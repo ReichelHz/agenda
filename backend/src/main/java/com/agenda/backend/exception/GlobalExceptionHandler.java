@@ -2,6 +2,7 @@ package com.agenda.backend.exception;
 
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -21,6 +22,17 @@ public class GlobalExceptionHandler {
                 .body(Map.of("error", ex.getMessage()));
     }
 
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<Map<String, String>> handleDataIntegrity(DataIntegrityViolationException ex) {
+        String message = ex.getMostSpecificCause().getMessage();
+        if (message != null && message.toLowerCase().contains("email")) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(Map.of("error", "El correo electrónico ya está registrado"));
+        }
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(Map.of("error", "Ya existe un registro con estos datos"));
+    }
+
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<Map<String, String>> handleNotFound(ResourceNotFoundException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
@@ -30,13 +42,13 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AuthenticationFailedException.class)
     public ResponseEntity<Map<String, String>> handleAuthenticationFailed() {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(Map.of("error", "Invalid credentials"));
+                .body(Map.of("error", "Credenciales inválidas"));
     }
 
     @ExceptionHandler(JwtException.class)
     public ResponseEntity<Map<String, String>> handleJwtException() {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(Map.of("error", "Invalid or expired token"));
+                .body(Map.of("error", "Token inválido o expirado"));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -46,11 +58,11 @@ public class GlobalExceptionHandler {
     ) {
         if (isLoginEndpoint(request)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", "Invalid credentials"));
+                    .body(Map.of("error", "Credenciales inválidas"));
         }
 
         FieldError fieldError = ex.getBindingResult().getFieldError();
-        String message = fieldError != null ? fieldError.getDefaultMessage() : "Validation failed";
+        String message = fieldError != null ? fieldError.getDefaultMessage() : "Error de validación";
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(Map.of("error", message));
@@ -63,11 +75,11 @@ public class GlobalExceptionHandler {
     ) {
         if (isLoginEndpoint(request)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", "Invalid credentials"));
+                    .body(Map.of("error", "Credenciales inválidas"));
         }
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(Map.of("error", "Malformed request"));
+                .body(Map.of("error", "Solicitud con formato incorrecto"));
     }
 
     @ExceptionHandler(IllegalArgumentException.class)

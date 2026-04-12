@@ -7,6 +7,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -58,14 +60,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     SecurityContextHolder.getContext().setAuthentication(authToken);
                 }
             }
-        } catch (JwtException ex) {
+        } catch (JwtException | IllegalArgumentException ex) {
             SecurityContextHolder.clearContext();
-            throw ex;
-        } catch (IllegalArgumentException ex) {
-            SecurityContextHolder.clearContext();
-            throw new JwtException("Invalid token", ex);
+            writeJsonError(response, HttpServletResponse.SC_UNAUTHORIZED, "Token inválido o expirado");
+            return;
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private void writeJsonError(HttpServletResponse response, int status, String message) throws IOException {
+        response.setStatus(status);
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        response.setCharacterEncoding(StandardCharsets.UTF_8.name());
+        response.getWriter().write("{\"error\":\"" + message + "\"}");
     }
 }

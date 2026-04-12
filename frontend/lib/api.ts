@@ -1,28 +1,58 @@
+const API_BASE =
+  typeof window === 'undefined'
+    ? (process.env.BACKEND_URL ?? 'http://localhost:8081')
+    : '';
+
+const TOKEN_KEY = 'auth_token';
+
+export function getToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem(TOKEN_KEY);
+}
+
+export function setToken(token: string): void {
+  localStorage.setItem(TOKEN_KEY, token);
+}
+
+export function clearToken(): void {
+  localStorage.removeItem(TOKEN_KEY);
+}
+
 async function request<T>(
   path: string,
   options: RequestInit = {}
 ): Promise<T> {
+  const token = getToken();
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
     ...(options.headers as Record<string, string> ?? {}),
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
 
-  const res = await fetch(path, { ...options, headers });
+  const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
 
   if (!res.ok) {
-    const error = await res.text();
-    throw new Error(error || `Error ${res.status}`);
+  const text = await res.text();
+  let message = text;
+
+  try {
+    const json = JSON.parse(text);
+    message = json.error || text;
+  } catch {
+    // no era JSON válido, usamos text directamente
+  }
+
+  throw new Error(message);
   }
 
   const text = await res.text();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (text ? JSON.parse(text) : null) as T;
 }
 
 // Auth
 export const authApi = {
   login: (email: string, password: string) =>
-    request<{ ok: boolean }>('/api/auth/login', {
+    request<{ token: string }>('/api/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     }),
@@ -56,13 +86,29 @@ export const usersApi = {
 export type Service = {
   id: number;
   name: string;
-  description: string;
+  description?: string;
   price: number;
+  durationMinutes?: number;
+  professional?: { id: number; name: string } | null;
+};
+
+export type PagedResponse<T> = {
+  content: T[];
+  totalPages: number;
+  totalElements: number;
+  number: number;
+  size: number;
 };
 
 export const servicesApi = {
-  list: () => request<Service[]>('/api/services'),
-  create: (data: { name: string; description: string; price: number }) =>
+  list: (page = 0, size = 6, search = '') => {
+    const params = new URLSearchParams({ page: String(page), size: String(size) });
+    if (search) params.set('search', search);
+    return request<PagedResponse<Service>>(`/api/services?${params}`);
+  },
+  byProfessional: (id: number) =>
+    request<Service[]>(`/api/services/professional/${id}`),
+  create: (data: { name: string; description: string; price: number; durationMinutes?: number; professional?: { id: number } }) =>
     request<Service>('/api/services', {
       method: 'POST',
       body: JSON.stringify(data),

@@ -101,7 +101,7 @@ public class UserService implements UserDetailsService {
 
     public User getById(Long id) {
         return userRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
     }
 
     public Optional<User> getByEmail(String email) {
@@ -114,7 +114,7 @@ public class UserService implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         User user = userRepository.findByEmail(username.trim().toLowerCase())
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+                .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado"));
 
         return new org.springframework.security.core.userdetails.User(
                 user.getEmail(),

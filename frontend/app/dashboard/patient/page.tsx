@@ -15,13 +15,11 @@ import {
   Plus,
   ArrowRight,
   Leaf,
-  Star,
   Syringe,
   Wind,
   Ear,
   Sparkles,
   Footprints,
-  Flame,
   HandHeart,
   Activity,
 } from 'lucide-react';
@@ -61,16 +59,6 @@ function getTherapyKey(name: string): TherapyKey {
   return keys.find((k) => k !== 'default' && lower.includes(k)) ?? 'default';
 }
 
-const FALLBACK_COLORS = [
-  { bg: 'bg-teal-50', icon: 'text-teal-600' },
-  { bg: 'bg-sky-50', icon: 'text-sky-600' },
-  { bg: 'bg-purple-50', icon: 'text-purple-600' },
-  { bg: 'bg-amber-50', icon: 'text-amber-600' },
-  { bg: 'bg-green-50', icon: 'text-green-600' },
-  { bg: 'bg-rose-50', icon: 'text-rose-600' },
-];
-
-const FALLBACK_ICONS: LucideIcon[] = [Syringe, Wind, Ear, Sparkles, Footprints, Flame];
 
 export default function PatientDashboard() {
   const { user } = useAuth();
@@ -79,8 +67,8 @@ export default function PatientDashboard() {
 
   useEffect(() => {
     servicesApi
-      .list()
-      .then(setServices)
+      .list(0, 50)
+      .then((data) => setServices(data.content))
       .catch(() => setServices([]))
       .finally(() => setLoading(false));
   }, []);
@@ -196,8 +184,8 @@ export default function PatientDashboard() {
           <div className="grid sm:grid-cols-2 gap-4">
             {services.map((sv, i) => {
               const key = getTherapyKey(sv.name);
-              const colors = key !== 'default' ? THERAPY_COLORS[key] : FALLBACK_COLORS[i % FALLBACK_COLORS.length];
-              const Icon = key !== 'default' ? THERAPY_ICONS[key] : FALLBACK_ICONS[i % FALLBACK_ICONS.length];
+              const colors = THERAPY_COLORS[key];
+              const Icon = THERAPY_ICONS[key];
               return (
                 <div
                   key={sv.id}
@@ -207,22 +195,21 @@ export default function PatientDashboard() {
                     <Icon className={cn('w-6 h-6', colors.icon)} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-2">
-                      <p className="font-semibold text-foreground text-sm truncate">{sv.name}</p>
-                      <div className="flex items-center gap-0.5 shrink-0">
-                        <Star className="w-3 h-3 fill-foreground text-foreground" />
-                        <span className="text-xs font-medium">4.8</span>
-                      </div>
-                    </div>
+                    <p className="font-semibold text-foreground text-sm truncate">{sv.name}</p>
                     <p className="text-muted-foreground text-xs mt-0.5 line-clamp-1">
                       {sv.description}
                     </p>
+                    {sv.professional?.name && (
+                      <p className="text-xs text-muted-foreground mt-1 truncate">
+                        Por <span className="font-medium text-foreground">{sv.professional.name}</span>
+                      </p>
+                    )}
                     <div className="flex items-center justify-between mt-2">
                       <span className="text-sm font-bold text-foreground">
-                        ${sv.price.toLocaleString()}
+                        ${Number(sv.price).toLocaleString()}
                       </span>
                       <Link
-                        href="/"
+                        href={sv.professional?.id ? `/book/${sv.professional.id}` : '/'}
                         className="text-xs text-primary font-medium hover:underline flex items-center gap-0.5"
                       >
                         Agendar <ArrowRight className="w-3 h-3" />

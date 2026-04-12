@@ -42,7 +42,7 @@ public class UrlService {
 
     public ShortUrl resolveAndCountClick(String shortCode) {
         ShortUrl shortUrl = shortUrlRepository.findByShortCode(shortCode)
-                .orElseThrow(() -> new ResourceNotFoundException("Short URL not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("URL corta no encontrada"));
 
         shortUrl.setClickCount(shortUrl.getClickCount() + 1);
         return shortUrlRepository.save(shortUrl);
@@ -55,7 +55,7 @@ public class UrlService {
                 return candidate;
             }
         }
-        throw new IllegalStateException("Failed to generate unique short code");
+        throw new IllegalStateException("No se pudo generar un código único para la URL corta");
     }
 
     private String randomCode(int length) {
