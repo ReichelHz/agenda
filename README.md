@@ -70,6 +70,12 @@ Para el envío de notificaciones de citas sin costo:
 - Sistema de email completamente funcional en entorno de desarrollo
 - Validación de credenciales SMTP exitosa
 - Envío automático de confirmación de citas al crear Appointment
+⚠️ Importante
+Por razones de seguridad, las credenciales NO están incluidas en el repositorio.
+🔐 Variables de entorno requeridas
+Debes configurar las siguientes variables en tu entorno local:
+MAIL_USERNAME=tu_correos@tu-negocio.com (o Gmail)
+MAIL_PASSWORD=tu_app_password
 
 ---
 
