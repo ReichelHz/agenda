@@ -14,9 +14,11 @@ public class MailService {
 
     private static final String CONFIRMATION_SUBJECT = "Confirmación de cita";
     private static final String CANCELLATION_SUBJECT = "Cancelación de cita";
+    private static final String REMINDER_SUBJECT = "Recordatorio de tu cita";
 
     private static final String CONFIRMATION_TITLE = "Tu cita fue registrada exitosamente.";
     private static final String CANCELLATION_TITLE = "Tu cita fue cancelada exitosamente.";
+    private static final String REMINDER_TITLE = "Recordatorio: Tu cita es próximamente";
 
     private final JavaMailSender mailSender;
     private final String from;
@@ -38,6 +40,10 @@ public class MailService {
 
     public void sendAppointmentCancellationEmail(EmailAppointmentSnapshot snapshot) {
         send(snapshot, CANCELLATION_SUBJECT, CANCELLATION_TITLE, "cancelación");
+    }
+
+    public void sendAppointmentReminderEmail(EmailAppointmentSnapshot snapshot) {
+        send(snapshot, REMINDER_SUBJECT, REMINDER_TITLE, "recordatorio");
     }
 
     // =========================

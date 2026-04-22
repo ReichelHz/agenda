@@ -61,4 +61,7 @@ public class Appointment {
 
     @Column(nullable = false)
     private BigDecimal totalPrice;
+
+    @Column(nullable = false, columnDefinition = "BOOLEAN DEFAULT false")
+    private Boolean reminderSent = false;
 }

@@ -4,15 +4,23 @@ import com.agenda.backend.controller.dto.AppointmentRequest;
 import com.agenda.backend.exception.ResourceNotFoundException;
 import com.agenda.backend.model.*;
 import com.agenda.backend.repository.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.security.SecureRandom;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.Optional;
 
 @Service
 public class AppointmentService {
+
+    private static final int REMINDER_BATCH_SIZE = 100;
 
     private final AppointmentRepository appointmentRepository;
     private final ProfessionalRepository professionalRepository;
@@ -139,6 +147,40 @@ public class AppointmentService {
 
     public java.util.List<Appointment> listByProfessionalId(Long professionalId) {
         return appointmentRepository.findAllByProfessionalId(professionalId);
+    }
+
+    @Transactional
+    public void sendReminderEmails() {
+        LocalDateTime now = LocalDateTime.now().withSecond(0).withNano(0);
+        LocalDate currentDate = now.toLocalDate();
+        LocalTime currentTime = now.toLocalTime();
+        LocalDate nextDate = currentDate.plusDays(1);
+
+        Pageable pageable = PageRequest.of(0, REMINDER_BATCH_SIZE);
+        Page<Appointment> page;
+
+        do {
+            page = appointmentRepository.findAppointmentsForReminder(
+                    currentDate,
+                    currentTime,
+                    nextDate,
+                    AppointmentStatus.CANCELLED,
+                    pageable
+            );
+
+            for (Appointment appointment : page.getContent()) {
+                try {
+                    mailService.sendAppointmentReminderEmail(buildEmailSnapshot(appointment));
+                    appointment.setReminderSent(true);
+                    appointmentRepository.save(appointment);
+                } catch (Exception ex) {
+                    org.slf4j.LoggerFactory.getLogger(AppointmentService.class)
+                        .error("Error enviando recordatorio para cita {}: {}", appointment.getId(), ex.getMessage());
+                }
+            }
+
+            pageable = page.hasNext() ? page.nextPageable() : Pageable.unpaged();
+        } while (page.hasNext());
     }
 
     private String generateUniqueReservationCode() {
