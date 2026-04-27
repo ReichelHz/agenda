@@ -1,5 +1,6 @@
 package com.agenda.backend.service;
 
+import com.agenda.backend.controller.dto.ChangePasswordRequest;
 import com.agenda.backend.controller.dto.LoginRequest;
 import com.agenda.backend.controller.dto.RegisterUserRequest;
 import com.agenda.backend.exception.AuthenticationFailedException;
@@ -102,6 +103,19 @@ public class UserService implements UserDetailsService {
     public User getById(Long id) {
         return userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
+    }
+
+    @Transactional
+    public void changePassword(String email, ChangePasswordRequest request) {
+        User user = userRepository.findByEmail(email.trim().toLowerCase())
+                .orElseThrow(AuthenticationFailedException::new);
+
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+            throw new AuthenticationFailedException();
+        }
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
     }
 
     public Optional<User> getByEmail(String email) {

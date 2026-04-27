@@ -129,4 +129,7 @@
   html {
     @apply font-sans;
   }
+  button, a, [role="button"], select, label[for] {
+    @apply cursor-pointer;
+  }
 }

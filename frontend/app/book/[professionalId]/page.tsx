@@ -30,6 +30,8 @@ import {
   Mail,
   User,
   FileText,
+  Building2,
+  Home,
 } from 'lucide-react';
 
 type BookStatus = 'idle' | 'submitting' | 'success' | 'error';
@@ -53,8 +55,10 @@ export default function BookPage({
     patientName: '',
     patientEmail: '',
     serviceId: '',
-    preferredDay: '' as DayOfWeek | '',
+    preferredDate: '',
     preferredTime: '',
+    locationType: 'OFFICE' as 'OFFICE' | 'HOME',
+    address: '',
     notes: '',
   });
   const [status, setStatus] = useState<BookStatus>('idle');
@@ -92,19 +96,20 @@ export default function BookPage({
           patientName: form.patientName,
           patientEmail: form.patientEmail,
           serviceId: parseInt(form.serviceId) || 0,
-          date: form.preferredDay,
+          date: form.preferredDate,
           time: form.preferredTime,
-          notes: form.notes,
+          locationType: form.locationType,
+          ...(form.locationType === 'HOME' && form.address ? { address: form.address } : {}),
         }),
       });
-      // Accept 404/405 as "submitted" while endpoint is under development
-      if (res.ok || res.status === 404 || res.status === 405) {
+      if (res.ok) {
         setStatus('success');
       } else {
         throw new Error(await res.text());
       }
-    } catch {
-      setStatus('success'); // Show success UI while endpoint is in development
+    } catch (err: unknown) {
+      setErrorMsg(err instanceof Error ? err.message : 'Error al enviar la solicitud');
+      setStatus('error');
     }
   }
 
@@ -164,8 +169,10 @@ export default function BookPage({
                 patientName: '',
                 patientEmail: '',
                 serviceId: '',
-                preferredDay: '',
+                preferredDate: '',
                 preferredTime: '',
+                locationType: 'OFFICE',
+                address: '',
                 notes: '',
               });
               setSelectedService(null);
@@ -272,23 +279,21 @@ export default function BookPage({
 
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <Label className="text-sm font-medium">Día preferido *</Label>
-                    <select
+                    <Label htmlFor="preferredDate" className="text-sm font-medium">Fecha *</Label>
+                    <Input
+                      id="preferredDate"
+                      type="date"
                       required
-                      value={form.preferredDay}
-                      onChange={(e) => setField('preferredDay', e.target.value)}
-                      className="w-full h-11 border border-input rounded-lg px-3 text-sm bg-transparent focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-ring"
-                    >
-                      <option value="">Elegí un día</option>
-                      {availableDays.map((day) => (
-                        <option key={day} value={day}>
-                          {DAY_LABELS[day]}
-                        </option>
-                      ))}
-                      {availableDays.length === 0 && (
-                        <option value="ANY">A convenir</option>
-                      )}
-                    </select>
+                      min={new Date().toISOString().slice(0, 10)}
+                      value={form.preferredDate}
+                      onChange={(e) => setField('preferredDate', e.target.value)}
+                      className="h-11"
+                    />
+                    {availableDays.length > 0 && (
+                      <p className="text-xs text-muted-foreground">
+                        Disponible los: {availableDays.map((d) => DAY_LABELS[d]).join(', ')}
+                      </p>
+                    )}
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-sm font-medium">Hora preferida *</Label>
@@ -305,6 +310,55 @@ export default function BookPage({
                   </div>
                 </div>
               </div>
+            </div>
+
+            {/* Location type */}
+            <div className="bg-white rounded-2xl border border-border p-6">
+              <h2 className="font-semibold text-foreground mb-5 flex items-center gap-2">
+                <Building2 className="w-4 h-4 text-primary" />
+                Modalidad de atención
+              </h2>
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                {(['OFFICE', 'HOME'] as const).map((type) => (
+                  <button
+                    key={type}
+                    type="button"
+                    onClick={() => setForm((p) => ({ ...p, locationType: type, address: '' }))}
+                    className={cn(
+                      'flex items-center gap-3 p-4 rounded-xl border-2 text-left transition-colors',
+                      form.locationType === type
+                        ? 'border-primary bg-primary/5 text-primary'
+                        : 'border-border bg-transparent text-muted-foreground hover:border-muted-foreground/40'
+                    )}
+                  >
+                    {type === 'OFFICE' ? (
+                      <Building2 className="w-5 h-5 shrink-0" />
+                    ) : (
+                      <Home className="w-5 h-5 shrink-0" />
+                    )}
+                    <div>
+                      <p className="text-sm font-medium text-foreground">
+                        {type === 'OFFICE' ? 'Consulta presencial' : 'A domicilio'}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {type === 'OFFICE' ? 'Asistís a la consulta presencial' : 'El profesional va a tu domicilio'}
+                      </p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+              {form.locationType === 'HOME' && (
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium">Dirección *</Label>
+                  <Input
+                    required
+                    value={form.address}
+                    onChange={(e) => setForm((p) => ({ ...p, address: e.target.value }))}
+                    placeholder="Ej: Av. Corrientes 1234, CABA"
+                    className="h-11"
+                  />
+                </div>
+              )}
             </div>
 
             {/* Notes */}

@@ -203,14 +203,12 @@ export default async function LandingPage({
 
                     <div className="flex flex-col flex-1 p-5 gap-3">
                       <div>
-                        <h3 className="font-semibold text-foreground text-base leading-tight mb-1">
+                        <h3 className="font-semibold text-foreground text-base leading-tight mb-1 truncate">
                           {service.name}
                         </h3>
-                        {service.description && (
-                          <p className="text-muted-foreground text-sm leading-relaxed line-clamp-3">
-                            {service.description}
-                          </p>
-                        )}
+                        <p className="text-muted-foreground text-sm leading-relaxed line-clamp-2 h-[2.5rem]">
+                          {service.description ?? ''}
+                        </p>
                       </div>
 
                       <div className="flex items-center gap-2.5 bg-muted/50 rounded-xl px-3 py-2.5">

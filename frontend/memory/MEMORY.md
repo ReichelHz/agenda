@@ -1,4 +1,4 @@
-# TerapiasVida Frontend — Memoria del Proyecto
+# Stefani Leiva Frontend — Memoria del Proyecto
 
 ## Stack
 - Next.js 16.2.3 (App Router, Turbopack)

@@ -2,12 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
-import { servicesApi, type Service } from '@/lib/api';
+import { addressesApi, usersApi, type PatientAddress } from '@/lib/api';
 import Link from 'next/link';
 import { buttonVariants } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import type { LucideIcon } from 'lucide-react';
 import {
   CalendarCheck,
   Clock,
@@ -15,63 +14,97 @@ import {
   Plus,
   ArrowRight,
   Leaf,
-  Syringe,
-  Wind,
-  Ear,
-  Sparkles,
-  Footprints,
-  HandHeart,
-  Activity,
+  MapPin,
+  Trash2,
+  Home,
+  X,
+  Lock,
+  Eye,
+  EyeOff,
+  CheckCircle2,
 } from 'lucide-react';
-
-type TherapyKey =
-  | 'acupuntura'
-  | 'ventosas'
-  | 'auriculoterapia'
-  | 'masajes'
-  | 'reiki'
-  | 'reflexología'
-  | 'default';
-
-const THERAPY_ICONS: Record<TherapyKey, LucideIcon> = {
-  acupuntura: Syringe,
-  ventosas: Wind,
-  auriculoterapia: Ear,
-  masajes: HandHeart,
-  reiki: Sparkles,
-  reflexología: Footprints,
-  default: Activity,
-};
-
-const THERAPY_COLORS: Record<TherapyKey, { bg: string; icon: string }> = {
-  acupuntura: { bg: 'bg-teal-50', icon: 'text-teal-600' },
-  ventosas: { bg: 'bg-sky-50', icon: 'text-sky-600' },
-  auriculoterapia: { bg: 'bg-purple-50', icon: 'text-purple-600' },
-  masajes: { bg: 'bg-rose-50', icon: 'text-rose-600' },
-  reiki: { bg: 'bg-amber-50', icon: 'text-amber-600' },
-  reflexología: { bg: 'bg-green-50', icon: 'text-green-600' },
-  default: { bg: 'bg-slate-50', icon: 'text-slate-500' },
-};
-
-function getTherapyKey(name: string): TherapyKey {
-  const lower = name.toLowerCase();
-  const keys = Object.keys(THERAPY_ICONS) as TherapyKey[];
-  return keys.find((k) => k !== 'default' && lower.includes(k)) ?? 'default';
-}
-
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
 
 export default function PatientDashboard() {
   const { user } = useAuth();
-  const [services, setServices] = useState<Service[]>([]);
-  const [loading, setLoading] = useState(true);
+
+  // Addresses
+  const [addresses, setAddresses] = useState<PatientAddress[]>([]);
+  const [addrLoading, setAddrLoading] = useState(true);
+  const [addrForm, setAddrForm] = useState({ label: '', address: '' });
+  const [addrSaving, setAddrSaving] = useState(false);
+  const [addrError, setAddrError] = useState('');
+  const [addrSuccess, setAddrSuccess] = useState('');
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [showAddrForm, setShowAddrForm] = useState(false);
+
+  // Password change state
+  const [pwForm, setPwForm] = useState({ current: '', next: '', confirm: '' });
+  const [pwSaving, setPwSaving] = useState(false);
+  const [pwError, setPwError] = useState('');
+  const [pwSuccess, setPwSuccess] = useState('');
+  const [pwShow, setPwShow] = useState({ current: false, next: false, confirm: false });
 
   useEffect(() => {
-    servicesApi
-      .list(0, 50)
-      .then((data) => setServices(data.content))
-      .catch(() => setServices([]))
-      .finally(() => setLoading(false));
+    addressesApi
+      .list()
+      .then(setAddresses)
+      .catch(() => setAddresses([]))
+      .finally(() => setAddrLoading(false));
   }, []);
+
+  async function handleAddAddress(e: React.SyntheticEvent) {
+    e.preventDefault();
+    setAddrError('');
+    setAddrSaving(true);
+    try {
+      const created = await addressesApi.add(addrForm);
+      setAddresses((prev) => [...prev, created]);
+      setAddrForm({ label: '', address: '' });
+      setShowAddrForm(false);
+      setAddrSuccess('Dirección guardada');
+      setTimeout(() => setAddrSuccess(''), 3000);
+    } catch (err: unknown) {
+      setAddrError(err instanceof Error ? err.message : 'Error al guardar');
+    } finally {
+      setAddrSaving(false);
+    }
+  }
+
+  async function handleDeleteAddress(id: number) {
+    setDeletingId(id);
+    try {
+      await addressesApi.remove(id);
+      setAddresses((prev) => prev.filter((a) => a.id !== id));
+    } catch {
+      // silently ignore — address stays in list
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
+  async function handleChangePassword(e: React.SyntheticEvent) {
+    e.preventDefault();
+    setPwError('');
+    setPwSuccess('');
+    if (pwForm.next !== pwForm.confirm) {
+      setPwError('Las contraseñas nuevas no coinciden');
+      return;
+    }
+    setPwSaving(true);
+    try {
+      await usersApi.changePassword(pwForm.current, pwForm.next);
+      setPwForm({ current: '', next: '', confirm: '' });
+      setPwSuccess('Contraseña actualizada correctamente');
+      setTimeout(() => setPwSuccess(''), 5000);
+    } catch (err: unknown) {
+      setPwError(err instanceof Error ? err.message : 'Error al cambiar la contraseña');
+    } finally {
+      setPwSaving(false);
+    }
+  }
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10">
@@ -165,62 +198,160 @@ export default function PatientDashboard() {
         </div>
       </div>
 
-      {/* Services */}
-      <div>
+      {/* Addresses */}
+      <div className="bg-white rounded-2xl border border-border p-6 mb-6">
         <div className="flex items-center justify-between mb-5">
-          <h2 className="font-semibold text-foreground">Servicios disponibles</h2>
-          <span className="text-xs text-muted-foreground">{services.length} opciones</span>
+          <h2 className="font-semibold text-foreground flex items-center gap-2">
+            <MapPin className="w-4 h-4 text-primary" />
+            Mis direcciones
+          </h2>
+          <button
+            onClick={() => { setShowAddrForm((v) => !v); setAddrError(''); }}
+            className="flex items-center gap-1.5 text-sm text-primary font-medium hover:underline"
+          >
+            {showAddrForm ? <><X className="w-3.5 h-3.5" /> Cancelar</> : <><Plus className="w-3.5 h-3.5" /> Agregar</>}
+          </button>
         </div>
 
-        {loading ? (
-          <div className="grid sm:grid-cols-2 gap-4">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="h-24 bg-muted animate-pulse rounded-2xl" />
+        {addrSuccess && (
+          <p className="text-emerald-700 text-sm bg-emerald-50 border border-emerald-200 px-3 py-2 rounded-lg mb-4 flex items-center gap-1.5">
+            <CalendarCheck className="w-3.5 h-3.5" /> {addrSuccess}
+          </p>
+        )}
+
+        {showAddrForm && (
+          <form onSubmit={handleAddAddress} className="bg-muted/40 rounded-xl border border-border p-4 mb-5 space-y-3">
+            <div className="grid sm:grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-sm font-medium">Etiqueta *</Label>
+                <Input
+                  required
+                  value={addrForm.label}
+                  onChange={(e) => setAddrForm((p) => ({ ...p, label: e.target.value }))}
+                  placeholder="Ej: Casa, Trabajo"
+                  className="h-10 bg-white"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-sm font-medium">Dirección *</Label>
+                <Input
+                  required
+                  value={addrForm.address}
+                  onChange={(e) => setAddrForm((p) => ({ ...p, address: e.target.value }))}
+                  placeholder="Ej: Av. Corrientes 1234, CABA"
+                  className="h-10 bg-white"
+                />
+              </div>
+            </div>
+            {addrError && (
+              <p className="text-destructive text-sm">{addrError}</p>
+            )}
+            <Button type="submit" disabled={addrSaving} size="sm" className="rounded-lg">
+              {addrSaving ? 'Guardando...' : 'Guardar dirección'}
+            </Button>
+          </form>
+        )}
+
+        {addrLoading ? (
+          <div className="space-y-2">
+            {[1, 2].map((i) => (
+              <div key={i} className="h-14 bg-muted animate-pulse rounded-xl" />
             ))}
           </div>
-        ) : services.length === 0 ? (
-          <p className="text-muted-foreground text-sm">No hay servicios registrados aún</p>
+        ) : addresses.length === 0 ? (
+          <div className="text-center py-10 border-2 border-dashed border-border rounded-2xl">
+            <Home className="w-8 h-8 text-muted-foreground/40 mx-auto mb-2" />
+            <p className="text-sm text-muted-foreground">No tenés direcciones guardadas</p>
+            <button
+              onClick={() => setShowAddrForm(true)}
+              className="text-primary text-sm font-medium hover:underline mt-1"
+            >
+              Agregar una ahora
+            </button>
+          </div>
         ) : (
-          <div className="grid sm:grid-cols-2 gap-4">
-            {services.map((sv, i) => {
-              const key = getTherapyKey(sv.name);
-              const colors = THERAPY_COLORS[key];
-              const Icon = THERAPY_ICONS[key];
-              return (
-                <div
-                  key={sv.id}
-                  className="group flex items-center gap-4 p-4 rounded-2xl border border-border bg-white hover:shadow-md transition-shadow cursor-pointer"
-                >
-                  <div className={cn('w-14 h-14 rounded-xl flex items-center justify-center shrink-0', colors.bg)}>
-                    <Icon className={cn('w-6 h-6', colors.icon)} />
+          <ul className="space-y-2">
+            {addresses.map((addr) => (
+              <li
+                key={addr.id}
+                className="flex items-center justify-between gap-3 p-4 rounded-xl bg-muted/40 border border-border"
+              >
+                <div className="flex items-start gap-3 min-w-0">
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                    <MapPin className="w-4 h-4 text-primary" />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-foreground text-sm truncate">{sv.name}</p>
-                    <p className="text-muted-foreground text-xs mt-0.5 line-clamp-1">
-                      {sv.description}
-                    </p>
-                    {sv.professional?.name && (
-                      <p className="text-xs text-muted-foreground mt-1 truncate">
-                        Por <span className="font-medium text-foreground">{sv.professional.name}</span>
-                      </p>
-                    )}
-                    <div className="flex items-center justify-between mt-2">
-                      <span className="text-sm font-bold text-foreground">
-                        ${Number(sv.price).toLocaleString()}
-                      </span>
-                      <Link
-                        href={sv.professional?.id ? `/book/${sv.professional.id}` : '/'}
-                        className="text-xs text-primary font-medium hover:underline flex items-center gap-0.5"
-                      >
-                        Agendar <ArrowRight className="w-3 h-3" />
-                      </Link>
-                    </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-foreground">{addr.label}</p>
+                    <p className="text-xs text-muted-foreground truncate">{addr.address}</p>
                   </div>
                 </div>
-              );
-            })}
-          </div>
+                <button
+                  onClick={() => handleDeleteAddress(addr.id)}
+                  disabled={deletingId === addr.id}
+                  className="shrink-0 p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/8 transition-colors disabled:opacity-40"
+                  aria-label="Eliminar dirección"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </li>
+            ))}
+          </ul>
         )}
+      </div>
+
+      {/* Change password */}
+      <div className="bg-white rounded-2xl border border-border p-6 mb-6">
+        <h2 className="font-semibold text-foreground mb-6 flex items-center gap-2">
+          <Lock className="w-4 h-4 text-primary" />
+          Cambiar contraseña
+        </h2>
+
+        <form onSubmit={handleChangePassword} className="grid sm:grid-cols-3 gap-4">
+          {[
+            { field: 'current', label: 'Contraseña actual', show: pwShow.current, toggle: () => setPwShow((p) => ({ ...p, current: !p.current })) },
+            { field: 'next', label: 'Nueva contraseña', show: pwShow.next, toggle: () => setPwShow((p) => ({ ...p, next: !p.next })) },
+            { field: 'confirm', label: 'Confirmar nueva contraseña', show: pwShow.confirm, toggle: () => setPwShow((p) => ({ ...p, confirm: !p.confirm })) },
+          ].map(({ field, label, show, toggle }) => (
+            <div key={field} className="space-y-1.5">
+              <Label className="text-sm font-medium">{label} *</Label>
+              <div className="relative">
+                <Input
+                  type={show ? 'text' : 'password'}
+                  required
+                  minLength={field === 'current' ? 1 : 8}
+                  value={pwForm[field as keyof typeof pwForm]}
+                  onChange={(e) => setPwForm((p) => ({ ...p, [field]: e.target.value }))}
+                  className="pr-10 h-11"
+                  placeholder={field === 'current' ? '••••••••' : 'Mínimo 8 caracteres'}
+                />
+                <button
+                  type="button"
+                  onClick={toggle}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  tabIndex={-1}
+                >
+                  {show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+          ))}
+
+          <div className="sm:col-span-3 space-y-3">
+            {pwError && (
+              <p className="text-destructive text-sm bg-destructive/8 border border-destructive/20 px-3 py-2 rounded-lg">
+                {pwError}
+              </p>
+            )}
+            {pwSuccess && (
+              <p className="text-emerald-700 text-sm bg-emerald-50 border border-emerald-200 px-3 py-2 rounded-lg flex items-center gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5" /> {pwSuccess}
+              </p>
+            )}
+            <Button type="submit" disabled={pwSaving} className="rounded-xl h-11 px-6">
+              {pwSaving ? 'Guardando...' : 'Actualizar contraseña'}
+            </Button>
+          </div>
+        </form>
       </div>
 
       {/* Tip */}

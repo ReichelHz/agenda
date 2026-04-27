@@ -34,9 +34,14 @@ export default function Navbar() {
           <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center group-hover:bg-primary/90 transition-colors">
             <Leaf className="w-4 h-4 text-primary-foreground" />
           </div>
-          <span className="font-bold text-lg text-foreground tracking-tight">
-            Terapias<span className="text-primary">Vida</span>
-          </span>
+          <div className="flex flex-col">
+            <span className="font-bold text-lg text-foreground tracking-tight leading-tight">
+              Stefani <span className="text-primary">Leiva</span>
+            </span>
+            <small className="text-xs text-muted-foreground font-normal">
+              Terapias Alternativas
+            </small>
+          </div>
         </Link>
 
         {/* Center nav links (desktop) */}

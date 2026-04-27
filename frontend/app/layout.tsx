@@ -8,7 +8,7 @@ import { Leaf } from 'lucide-react';
 const GeistSans = Geist({ subsets: ['latin'], variable: '--font-sans' });
 
 export const metadata: Metadata = {
-  title: 'TerapiasVida — Agenda de Terapias Alternativas',
+  title: 'Stefani Leiva — Terapias Alternativas',
   description:
     'Conectamos pacientes con profesionales de acupuntura, ventosas, auriculoterapia y más.',
 };
@@ -29,7 +29,7 @@ export default function RootLayout({
               <div className="grid sm:grid-cols-3 gap-8 mb-8">
                 <div>
                   <h3 className="font-semibold text-sm text-foreground mb-3">
-                    TerapiasVida
+                    Stefani Leiva
                   </h3>
                   <p className="text-sm text-muted-foreground leading-relaxed">
                     Conectamos pacientes con profesionales de terapias alternativas para un bienestar integral.
@@ -59,7 +59,7 @@ export default function RootLayout({
               </div>
               <div className="border-t border-border pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
                 <p className="text-xs text-muted-foreground">
-                  © 2026 TerapiasVida. Todos los derechos reservados.
+                  © 2026 Stefani Leiva. Todos los derechos reservados.
                 </p>
                 <p className="text-xs text-muted-foreground flex items-center gap-1.5">
                   Bienestar natural para todos

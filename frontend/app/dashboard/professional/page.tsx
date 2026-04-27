@@ -5,6 +5,7 @@ import { useAuth } from '@/lib/auth-context';
 import {
   availabilitiesApi,
   servicesApi,
+  usersApi,
   type Availability,
   type Service,
   type DayOfWeek,
@@ -31,6 +32,9 @@ import {
   Stethoscope,
   User,
   Scissors,
+  Lock,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 
 export default function ProfessionalDashboard() {
@@ -61,6 +65,13 @@ export default function ProfessionalDashboard() {
   const [svSuccess, setSvSuccess] = useState('');
 
   const [copied, setCopied] = useState(false);
+
+  // Password change state
+  const [pwForm, setPwForm] = useState({ current: '', next: '', confirm: '' });
+  const [pwSaving, setPwSaving] = useState(false);
+  const [pwError, setPwError] = useState('');
+  const [pwSuccess, setPwSuccess] = useState('');
+  const [pwShow, setPwShow] = useState({ current: false, next: false, confirm: false });
 
   useEffect(() => {
     if (!user) return;
@@ -125,6 +136,27 @@ export default function ProfessionalDashboard() {
       setSvError(err instanceof Error ? err.message : 'Error al crear servicio');
     } finally {
       setSvSaving(false);
+    }
+  }
+
+  async function handleChangePassword(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setPwError('');
+    setPwSuccess('');
+    if (pwForm.next !== pwForm.confirm) {
+      setPwError('Las contraseñas nuevas no coinciden');
+      return;
+    }
+    setPwSaving(true);
+    try {
+      await usersApi.changePassword(pwForm.current, pwForm.next);
+      setPwForm({ current: '', next: '', confirm: '' });
+      setPwSuccess('Contraseña actualizada correctamente');
+      setTimeout(() => setPwSuccess(''), 5000);
+    } catch (err: unknown) {
+      setPwError(err instanceof Error ? err.message : 'Error al cambiar la contraseña');
+    } finally {
+      setPwSaving(false);
     }
   }
 
@@ -475,41 +507,102 @@ export default function ProfessionalDashboard() {
 
         {/* ── Profile ── */}
         <TabsContent value="profile">
-          <div className="bg-white rounded-2xl border border-border p-6 max-w-lg">
-            <h2 className="font-semibold text-foreground mb-6">Mi perfil</h2>
+          <div className="grid lg:grid-cols-2 gap-6">
+            {/* Info + booking link */}
+            <div className="bg-white rounded-2xl border border-border p-6">
+              <h2 className="font-semibold text-foreground mb-6">Mi perfil</h2>
 
-            <div className="flex items-center gap-4 mb-6 pb-6 border-b border-border">
-              <div className="w-16 h-16 rounded-2xl bg-primary/10 text-primary flex items-center justify-center text-2xl font-bold">
-                {user?.name.charAt(0).toUpperCase()}
+              <div className="flex items-center gap-4 mb-6 pb-6 border-b border-border">
+                <div className="w-16 h-16 rounded-2xl bg-primary/10 text-primary flex items-center justify-center text-2xl font-bold">
+                  {user?.name.charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <p className="font-semibold text-foreground text-lg">{user?.name}</p>
+                  <p className="text-muted-foreground text-sm">{user?.email}</p>
+                  <Badge variant="secondary" className="mt-1.5 text-xs">
+                    Profesional verificado ✓
+                  </Badge>
+                </div>
               </div>
-              <div>
-                <p className="font-semibold text-foreground text-lg">{user?.name}</p>
-                <p className="text-muted-foreground text-sm">{user?.email}</p>
-                <Badge variant="secondary" className="mt-1.5 text-xs">
-                  Profesional verificado ✓
-                </Badge>
+
+              <div className="space-y-3">
+                <Label className="text-sm font-medium">Tu link de reservas</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    readOnly
+                    value={bookingUrl}
+                    className="flex-1 text-sm text-muted-foreground bg-muted/50 h-11"
+                  />
+                  <Button
+                    onClick={copyBookingUrl}
+                    variant="outline"
+                    className="h-11 px-4 shrink-0 rounded-xl"
+                  >
+                    {copied ? '¡Copiado!' : 'Copiar'}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Compartí este link para que tus pacientes reserven online directamente
+                </p>
               </div>
             </div>
 
-            <div className="space-y-3">
-              <Label className="text-sm font-medium">Tu link de reservas</Label>
-              <div className="flex items-center gap-2">
-                <Input
-                  readOnly
-                  value={bookingUrl}
-                  className="flex-1 text-sm text-muted-foreground bg-muted/50 h-11"
-                />
+            {/* Change password */}
+            <div className="bg-white rounded-2xl border border-border p-6">
+              <h2 className="font-semibold text-foreground mb-6 flex items-center gap-2">
+                <Lock className="w-4 h-4 text-primary" />
+                Cambiar contraseña
+              </h2>
+
+              <form onSubmit={handleChangePassword} className="space-y-4">
+                {[
+                  { field: 'current', label: 'Contraseña actual', show: pwShow.current, toggle: () => setPwShow((p) => ({ ...p, current: !p.current })) },
+                  { field: 'next', label: 'Nueva contraseña', show: pwShow.next, toggle: () => setPwShow((p) => ({ ...p, next: !p.next })) },
+                  { field: 'confirm', label: 'Confirmar nueva contraseña', show: pwShow.confirm, toggle: () => setPwShow((p) => ({ ...p, confirm: !p.confirm })) },
+                ].map(({ field, label, show, toggle }) => (
+                  <div key={field} className="space-y-1.5">
+                    <Label className="text-sm font-medium">{label} *</Label>
+                    <div className="relative">
+                      <Input
+                        type={show ? 'text' : 'password'}
+                        required
+                        minLength={field === 'current' ? 1 : 8}
+                        value={pwForm[field as keyof typeof pwForm]}
+                        onChange={(e) => setPwForm((p) => ({ ...p, [field]: e.target.value }))}
+                        className="pr-10 h-11"
+                        placeholder={field === 'current' ? '••••••••' : 'Mínimo 8 caracteres'}
+                      />
+                      <button
+                        type="button"
+                        onClick={toggle}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                        tabIndex={-1}
+                      >
+                        {show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+
+                {pwError && (
+                  <p className="text-destructive text-sm bg-destructive/8 border border-destructive/20 px-3 py-2 rounded-lg">
+                    {pwError}
+                  </p>
+                )}
+                {pwSuccess && (
+                  <p className="text-emerald-700 text-sm bg-emerald-50 border border-emerald-200 px-3 py-2 rounded-lg flex items-center gap-1.5">
+                    <CheckCircle2 className="w-3.5 h-3.5" /> {pwSuccess}
+                  </p>
+                )}
+
                 <Button
-                  onClick={copyBookingUrl}
-                  variant="outline"
-                  className="h-11 px-4 shrink-0 rounded-xl"
+                  type="submit"
+                  disabled={pwSaving}
+                  className="w-full h-11 rounded-xl"
                 >
-                  {copied ? '¡Copiado!' : 'Copiar'}
+                  {pwSaving ? 'Guardando...' : 'Actualizar contraseña'}
                 </Button>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Compartí este link para que tus pacientes reserven online directamente
-              </p>
+              </form>
             </div>
           </div>
         </TabsContent>

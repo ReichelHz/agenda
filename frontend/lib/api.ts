@@ -80,6 +80,11 @@ export const usersApi = {
     request<{ id: number; name: string; email: string; role: string }>(
       '/api/users/me'
     ),
+  changePassword: (currentPassword: string, newPassword: string) =>
+    request<void>('/api/users/me/password', {
+      method: 'PATCH',
+      body: JSON.stringify({ currentPassword, newPassword }),
+    }),
 };
 
 // Services
@@ -179,6 +184,24 @@ export const appointmentsApi = {
   myAppointments: () => request<Appointment[]>('/api/appointments/me'),
   cancel: (id: number) =>
     request<Appointment>(`/api/appointments/${id}/cancel`, { method: 'PATCH' }),
+};
+
+// Addresses
+export type PatientAddress = {
+  id: number;
+  label: string;
+  address: string;
+};
+
+export const addressesApi = {
+  list: () => request<PatientAddress[]>('/api/addresses'),
+  add: (data: { label: string; address: string }) =>
+    request<PatientAddress>('/api/addresses', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  remove: (id: number) =>
+    request<void>(`/api/addresses/${id}`, { method: 'DELETE' }),
 };
 
 // Short URLs
