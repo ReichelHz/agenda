@@ -100,7 +100,7 @@ export default async function LandingPage({
           </h1>
 
           <p className="text-teal-100 text-lg sm:text-xl mb-10 max-w-2xl mx-auto leading-relaxed">
-            Agendá sesiones de acupuntura, ventosas, auriculoterapia y más con
+            Agenda sesiones de acupuntura, ventosas, auriculoterapia y más con
             los mejores profesionales. Fácil, rápido y sin turnos telefónicos.
           </p>
 
