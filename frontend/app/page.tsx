@@ -179,7 +179,7 @@ export default async function LandingPage({
               {validItems.map((service, i) => {
                 const style = STYLES[i % STYLES.length];
                 const { Icon } = style;
-                const bookHref = `/book/${service.professional!.id}`;
+                const bookHref = `/book/${service.professional!.id}?serviceId=${service.id}`;
                 return (
                   <div
                     key={service.id}

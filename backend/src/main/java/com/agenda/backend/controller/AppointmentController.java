@@ -13,6 +13,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.util.List;
 import java.util.Optional;
 
 @RestController
@@ -25,6 +28,19 @@ public class AppointmentController {
     public AppointmentController(AppointmentService appointmentService, UserService userService) {
         this.appointmentService = appointmentService;
         this.userService = userService;
+    }
+
+    @GetMapping("/occupied")
+    public ResponseEntity<List<String>> getOccupiedTimes(
+            @RequestParam Long professionalId,
+            @RequestParam String date
+    ) {
+        List<String> times = appointmentService
+                .listOccupiedTimes(professionalId, LocalDate.parse(date))
+                .stream()
+                .map(t -> t.toString().substring(0, 5)) // HH:MM
+                .toList();
+        return ResponseEntity.ok(times);
     }
 
     @PostMapping

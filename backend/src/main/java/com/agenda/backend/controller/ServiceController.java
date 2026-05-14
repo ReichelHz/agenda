@@ -31,15 +31,15 @@ public class ServiceController {
             Pageable pageable) {
         if (search != null && !search.isBlank()) {
             return serviceRepository
-                    .findByProfessionalIsNotNullAndNameContainingIgnoreCase(search.trim(), pageable)
+                    .findByProfessionalIsNotNullAndActiveTrueAndNameContainingIgnoreCase(search.trim(), pageable)
                     .map(ServiceResponse::from);
         }
-        return serviceRepository.findByProfessionalIsNotNull(pageable).map(ServiceResponse::from);
+        return serviceRepository.findByProfessionalIsNotNullAndActiveTrue(pageable).map(ServiceResponse::from);
     }
 
     @GetMapping("/professional/{professionalId}")
     public List<ServiceResponse> getByProfessional(@PathVariable Long professionalId) {
-        return serviceRepository.findByProfessionalId(professionalId)
+        return serviceRepository.findByProfessionalIdAndActiveTrue(professionalId)
                 .stream()
                 .map(ServiceResponse::from)
                 .toList();
@@ -55,5 +55,30 @@ public class ServiceController {
         }
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ServiceResponse.from(serviceRepository.save(service)));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<ServiceResponse> update(@PathVariable Long id, @RequestBody Service updated) {
+        Service service = serviceRepository.findById(id).orElse(null);
+        if (service == null) {
+            return ResponseEntity.notFound().build();
+        }
+        if (updated.getName() != null) service.setName(updated.getName());
+        if (updated.getDescription() != null) service.setDescription(updated.getDescription());
+        if (updated.getPrice() != null) service.setPrice(updated.getPrice());
+        if (updated.getDurationMinutes() != null) service.setDurationMinutes(updated.getDurationMinutes());
+        if (updated.getModality() != null) service.setModality(updated.getModality());
+        return ResponseEntity.ok(ServiceResponse.from(serviceRepository.save(service)));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        Service service = serviceRepository.findById(id).orElse(null);
+        if (service == null) {
+            return ResponseEntity.notFound().build();
+        }
+        service.setActive(false);
+        serviceRepository.save(service);
+        return ResponseEntity.noContent().build();
     }
 }

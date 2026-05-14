@@ -49,6 +49,19 @@ public class AppointmentService {
         com.agenda.backend.model.Service service = serviceRepository.findById(request.getServiceId())
                 .orElseThrow(() -> new ResourceNotFoundException("Servicio no encontrado"));
 
+        // Validate modality compatibility
+        com.agenda.backend.model.ServiceModality modality =
+                service.getModality() != null
+                        ? service.getModality()
+                        : com.agenda.backend.model.ServiceModality.PRESENCIAL;
+
+        if (request.getLocationType() == LocationType.VIRTUAL && !modality.allowsVirtual()) {
+            throw new IllegalStateException("Este servicio no está disponible en modalidad virtual");
+        }
+        if (request.getLocationType() == LocationType.OFFICE && !modality.allowsPresencial()) {
+            throw new IllegalStateException("Este servicio no está disponible en modalidad presencial");
+        }
+
         if (request.getLocationType() == LocationType.HOME) {
             if (!professional.isAllowsHomeVisit()) {
                 throw new IllegalStateException("Este profesional no realiza visitas a domicilio");
@@ -147,6 +160,14 @@ public class AppointmentService {
 
     public java.util.List<Appointment> listByProfessionalId(Long professionalId) {
         return appointmentRepository.findAllByProfessionalId(professionalId);
+    }
+
+    public java.util.List<LocalTime> listOccupiedTimes(Long professionalId, LocalDate date) {
+        return appointmentRepository
+                .findAllByProfessionalIdAndDateAndStatusNot(professionalId, date, AppointmentStatus.CANCELLED)
+                .stream()
+                .map(Appointment::getTime)
+                .toList();
     }
 
     @Transactional

@@ -1,9 +1,11 @@
 'use client';
 
 import { useEffect, useState, use } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
   availabilitiesApi,
   servicesApi,
+  appointmentsApi,
   type Availability,
   type Service,
   DAY_LABELS,
@@ -11,6 +13,8 @@ import {
   type DayOfWeek,
 } from '@/lib/api';
 import Link from 'next/link';
+import { MiniCalendar } from '@/components/ui/mini-calendar';
+import { TimeSlotPicker } from '@/components/ui/time-slot-picker';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -21,7 +25,6 @@ import { cn } from '@/lib/utils';
 import {
   ArrowLeft,
   Calendar,
-  Clock,
   Star,
   CheckCircle2,
   AlertCircle,
@@ -31,7 +34,7 @@ import {
   User,
   FileText,
   Building2,
-  Home,
+  Video,
 } from 'lucide-react';
 
 type BookStatus = 'idle' | 'submitting' | 'success' | 'error';
@@ -45,11 +48,14 @@ export default function BookPage({
 }) {
   const { professionalId } = use(params);
   const profId = parseInt(professionalId, 10);
+  const searchParams = useSearchParams();
+  const preselectedServiceId = searchParams.get('serviceId');
 
   const [availabilities, setAvailabilities] = useState<Availability[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
+  const [occupiedTimes, setOccupiedTimes] = useState<string[]>([]);
 
   const [form, setForm] = useState({
     patientName: '',
@@ -57,7 +63,7 @@ export default function BookPage({
     serviceId: '',
     preferredDate: '',
     preferredTime: '',
-    locationType: 'OFFICE' as 'OFFICE' | 'HOME',
+    locationType: 'OFFICE' as 'OFFICE' | 'HOME' | 'VIRTUAL',
     address: '',
     notes: '',
   });
@@ -65,11 +71,28 @@ export default function BookPage({
   const [errorMsg, setErrorMsg] = useState('');
 
   useEffect(() => {
+    if (!form.preferredDate || isNaN(profId)) return;
+    setOccupiedTimes([]);
+    appointmentsApi.occupiedTimes(profId, form.preferredDate)
+      .then(setOccupiedTimes)
+      .catch(() => {});
+  }, [form.preferredDate, profId]);
+
+  useEffect(() => {
     if (isNaN(profId)) return;
     Promise.all([availabilitiesApi.byProfessional(profId), servicesApi.byProfessional(profId)])
       .then(([avs, svs]) => {
         setAvailabilities(avs);
         setServices(svs);
+        if (preselectedServiceId) {
+          const sv = svs.find((s) => String(s.id) === preselectedServiceId);
+          if (sv) {
+            setSelectedService(sv);
+            const mod = sv.modality ?? 'PRESENCIAL';
+            const defaultLoc = mod === 'VIRTUAL' ? 'VIRTUAL' : 'OFFICE';
+            setForm((p) => ({ ...p, serviceId: String(sv.id), locationType: defaultLoc }));
+          }
+        }
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -80,33 +103,40 @@ export default function BookPage({
     if (field === 'serviceId') {
       const sv = services.find((s) => String(s.id) === value);
       setSelectedService(sv ?? null);
+      if (sv) {
+        // Auto-select the only available modality
+        const mod = sv.modality ?? 'PRESENCIAL';
+        const defaultLoc = mod === 'VIRTUAL' ? 'VIRTUAL' : 'OFFICE';
+        setForm((p) => ({ ...p, serviceId: value, locationType: defaultLoc }));
+      }
     }
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setErrorMsg('');
+    if (!form.preferredDate) {
+      setErrorMsg('Seleccioná una fecha antes de continuar.');
+      return;
+    }
+    if (!form.preferredTime) {
+      setErrorMsg('Seleccioná un horario antes de continuar.');
+      return;
+    }
     setStatus('submitting');
     try {
-      const res = await fetch('/api/appointments', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          professionalId: profId,
-          patientName: form.patientName,
-          patientEmail: form.patientEmail,
-          serviceId: parseInt(form.serviceId) || 0,
-          date: form.preferredDate,
-          time: form.preferredTime,
-          locationType: form.locationType,
-          ...(form.locationType === 'HOME' && form.address ? { address: form.address } : {}),
-        }),
+      await appointmentsApi.create({
+        professionalId: profId,
+        patientName: form.patientName,
+        patientEmail: form.patientEmail,
+        serviceId: parseInt(form.serviceId) || 0,
+        date: form.preferredDate,
+        time: form.preferredTime,
+        locationType: form.locationType,
+        ...(form.notes ? { notes: form.notes } : {}),
+        ...(form.locationType === 'HOME' && form.address ? { address: form.address } : {}),
       });
-      if (res.ok) {
-        setStatus('success');
-      } else {
-        throw new Error(await res.text());
-      }
+      setStatus('success');
     } catch (err: unknown) {
       setErrorMsg(err instanceof Error ? err.message : 'Error al enviar la solicitud');
       setStatus('error');
@@ -121,6 +151,18 @@ export default function BookPage({
     {} as Record<DayOfWeek, Availability[]>
   );
   const availableDays = DAYS_ORDER.filter((d) => byDay[d].length > 0);
+
+  // Derive availability ranges for the selected date
+  const JS_DAY_TO_DOW: Record<number, DayOfWeek> = {
+    0: 'SUNDAY', 1: 'MONDAY', 2: 'TUESDAY', 3: 'WEDNESDAY',
+    4: 'THURSDAY', 5: 'FRIDAY', 6: 'SATURDAY',
+  };
+  const selectedDayRanges = (() => {
+    if (!form.preferredDate) return [];
+    const jsDay = new Date(form.preferredDate + 'T00:00:00').getDay();
+    const dow = JS_DAY_TO_DOW[jsDay];
+    return byDay[dow] ?? [];
+  })();
 
   if (isNaN(profId)) {
     return (
@@ -171,7 +213,7 @@ export default function BookPage({
                 serviceId: '',
                 preferredDate: '',
                 preferredTime: '',
-                locationType: 'OFFICE',
+                locationType: 'OFFICE' as 'OFFICE' | 'HOME' | 'VIRTUAL',
                 address: '',
                 notes: '',
               });
@@ -259,106 +301,128 @@ export default function BookPage({
                 {/* Service select */}
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium">Servicio deseado *</Label>
-                  <select
-                    required
-                    value={form.serviceId}
-                    onChange={(e) => setField('serviceId', e.target.value)}
-                    className="w-full h-11 border border-input rounded-lg px-3 text-sm bg-transparent focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-ring"
-                  >
-                    <option value="">Seleccioná un servicio</option>
-                    {services.map((sv) => (
-                      <option key={sv.id} value={sv.id}>
-                        {sv.name} — ${sv.price.toLocaleString()}
-                      </option>
-                    ))}
-                    {services.length === 0 && (
-                      <option value="0">Consultar disponibilidad</option>
-                    )}
-                  </select>
+                  {preselectedServiceId && selectedService ? (
+                    <div className="w-full h-11 border border-input rounded-lg px-3 text-sm bg-muted/40 flex items-center justify-between">
+                      <span className="font-medium text-foreground">{selectedService.name}</span>
+                      <span className="text-muted-foreground">${selectedService.price.toLocaleString()}</span>
+                    </div>
+                  ) : (
+                    <select
+                      required
+                      value={form.serviceId}
+                      onChange={(e) => setField('serviceId', e.target.value)}
+                      className="w-full h-11 border border-input rounded-lg px-3 text-sm bg-transparent focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-ring"
+                    >
+                      <option value="">Seleccioná un servicio</option>
+                      {services.map((sv) => (
+                        <option key={sv.id} value={sv.id}>
+                          {sv.name} — ${sv.price.toLocaleString()}
+                        </option>
+                      ))}
+                      {services.length === 0 && (
+                        <option value="0">Consultar disponibilidad</option>
+                      )}
+                    </select>
+                  )}
                 </div>
 
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="preferredDate" className="text-sm font-medium">Fecha *</Label>
-                    <Input
-                      id="preferredDate"
-                      type="date"
-                      required
-                      min={new Date().toISOString().slice(0, 10)}
-                      value={form.preferredDate}
-                      onChange={(e) => setField('preferredDate', e.target.value)}
-                      className="h-11"
-                    />
-                    {availableDays.length > 0 && (
-                      <p className="text-xs text-muted-foreground">
-                        Disponible los: {availableDays.map((d) => DAY_LABELS[d]).join(', ')}
-                      </p>
-                    )}
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-sm font-medium">Hora preferida *</Label>
-                    <div className="relative">
-                      <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-                      <Input
-                        type="time"
-                        required
-                        value={form.preferredTime}
-                        onChange={(e) => setField('preferredTime', e.target.value)}
-                        className="pl-9 h-11"
-                      />
-                    </div>
-                  </div>
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium">Fecha *</Label>
+                  <MiniCalendar
+                    value={form.preferredDate}
+                    onChange={(date) =>
+                      setForm((p) => ({ ...p, preferredDate: date, preferredTime: '' }))
+                    }
+                    availableDays={availableDays}
+                  />
+                  {!form.preferredDate && (
+                    <p className="text-xs text-destructive">Seleccioná una fecha</p>
+                  )}
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium">Hora *</Label>
+                  <TimeSlotPicker
+                    value={form.preferredTime}
+                    onChange={(time) => setField('preferredTime', time)}
+                    ranges={selectedDayRanges}
+                    occupiedTimes={occupiedTimes}
+                  />
+                  {form.preferredDate && !form.preferredTime && (
+                    <p className="text-xs text-destructive">Seleccioná un horario</p>
+                  )}
                 </div>
               </div>
             </div>
 
-            {/* Location type */}
+            {/* Modality */}
             <div className="bg-white rounded-2xl border border-border p-6">
-              <h2 className="font-semibold text-foreground mb-5 flex items-center gap-2">
+              <h2 className="font-semibold text-foreground mb-1 flex items-center gap-2">
                 <Building2 className="w-4 h-4 text-primary" />
                 Modalidad de atención
               </h2>
-              <div className="grid grid-cols-2 gap-3 mb-4">
-                {(['OFFICE', 'HOME'] as const).map((type) => (
-                  <button
-                    key={type}
-                    type="button"
-                    onClick={() => setForm((p) => ({ ...p, locationType: type, address: '' }))}
-                    className={cn(
-                      'flex items-center gap-3 p-4 rounded-xl border-2 text-left transition-colors',
-                      form.locationType === type
-                        ? 'border-primary bg-primary/5 text-primary'
-                        : 'border-border bg-transparent text-muted-foreground hover:border-muted-foreground/40'
-                    )}
-                  >
-                    {type === 'OFFICE' ? (
-                      <Building2 className="w-5 h-5 shrink-0" />
-                    ) : (
-                      <Home className="w-5 h-5 shrink-0" />
-                    )}
-                    <div>
-                      <p className="text-sm font-medium text-foreground">
-                        {type === 'OFFICE' ? 'Consulta presencial' : 'A domicilio'}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {type === 'OFFICE' ? 'Asistís a la consulta presencial' : 'El profesional va a tu domicilio'}
-                      </p>
-                    </div>
-                  </button>
-                ))}
-              </div>
-              {form.locationType === 'HOME' && (
-                <div className="space-y-1.5">
-                  <Label className="text-sm font-medium">Dirección *</Label>
-                  <Input
-                    required
-                    value={form.address}
-                    onChange={(e) => setForm((p) => ({ ...p, address: e.target.value }))}
-                    placeholder="Ej: Av. Corrientes 1234, CABA"
-                    className="h-11"
-                  />
-                </div>
+              {!selectedService && (
+                <p className="text-xs text-muted-foreground mb-4">Seleccioná un servicio para ver las modalidades disponibles.</p>
               )}
+              {selectedService && (
+                <p className="text-xs text-muted-foreground mb-4">
+                  Modalidades habilitadas para <span className="font-medium text-foreground">{selectedService.name}</span>.
+                </p>
+              )}
+              {(() => {
+                const mod = selectedService?.modality ?? null;
+                const presencialEnabled = mod === null ? false : mod === 'PRESENCIAL' || mod === 'AMBAS';
+                const virtualEnabled = mod === null ? false : mod === 'VIRTUAL' || mod === 'AMBAS';
+                return (
+                  <div className="grid grid-cols-2 gap-3">
+                    {/* PRESENCIAL */}
+                    <button
+                      key="OFFICE"
+                      type="button"
+                      disabled={!presencialEnabled}
+                      onClick={() => presencialEnabled && setForm((p) => ({ ...p, locationType: 'OFFICE' }))}
+                      className={cn(
+                        'flex items-center gap-3 p-4 rounded-xl border-2 text-left transition-colors',
+                        !presencialEnabled
+                          ? 'border-border bg-muted/40 text-muted-foreground/50 cursor-not-allowed opacity-50'
+                          : form.locationType === 'OFFICE'
+                          ? 'border-primary bg-primary/5 text-primary'
+                          : 'border-border bg-transparent text-muted-foreground hover:border-muted-foreground/40'
+                      )}
+                    >
+                      <Building2 className="w-5 h-5 shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium text-foreground">Presencial</p>
+                        <p className="text-xs text-muted-foreground">
+                          {presencialEnabled ? 'Asistís al consultorio' : 'No disponible'}
+                        </p>
+                      </div>
+                    </button>
+                    {/* VIRTUAL */}
+                    <button
+                      key="VIRTUAL"
+                      type="button"
+                      disabled={!virtualEnabled}
+                      onClick={() => virtualEnabled && setForm((p) => ({ ...p, locationType: 'VIRTUAL' }))}
+                      className={cn(
+                        'flex items-center gap-3 p-4 rounded-xl border-2 text-left transition-colors',
+                        !virtualEnabled
+                          ? 'border-border bg-muted/40 text-muted-foreground/50 cursor-not-allowed opacity-50'
+                          : form.locationType === 'VIRTUAL'
+                          ? 'border-primary bg-primary/5 text-primary'
+                          : 'border-border bg-transparent text-muted-foreground hover:border-muted-foreground/40'
+                      )}
+                    >
+                      <Video className="w-5 h-5 shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium text-foreground">Virtual</p>
+                        <p className="text-xs text-muted-foreground">
+                          {virtualEnabled ? 'Sesión por videollamada' : 'No disponible'}
+                        </p>
+                      </div>
+                    </button>
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Notes */}

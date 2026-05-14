@@ -2,7 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
-import { addressesApi, usersApi, type PatientAddress } from '@/lib/api';
+import {
+  addressesApi,
+  usersApi,
+  appointmentsApi,
+  type PatientAddress,
+  type Appointment,
+  type AppointmentStatus,
+} from '@/lib/api';
 import Link from 'next/link';
 import { buttonVariants } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,7 +19,6 @@ import {
   Clock,
   BarChart3,
   Plus,
-  ArrowRight,
   Leaf,
   MapPin,
   Trash2,
@@ -22,13 +28,55 @@ import {
   Eye,
   EyeOff,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  Ban,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 
+const PAGE_SIZE = 5;
+
+const STATUS_CONFIG: Record<
+  AppointmentStatus,
+  { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline'; className: string }
+> = {
+  PENDING: {
+    label: 'Pendiente',
+    variant: 'outline',
+    className: 'border-amber-300 text-amber-700 bg-amber-50',
+  },
+  CONFIRMED: {
+    label: 'Confirmada',
+    variant: 'outline',
+    className: 'border-emerald-300 text-emerald-700 bg-emerald-50',
+  },
+  CANCELLED: {
+    label: 'Cancelada',
+    variant: 'outline',
+    className: 'border-red-200 text-red-600 bg-red-50',
+  },
+};
+
+function formatDate(dateStr: string) {
+  const [year, month, day] = dateStr.split('-');
+  return `${day}/${month}/${year}`;
+}
+
+function formatTime(timeStr: string) {
+  return timeStr.slice(0, 5);
+}
+
 export default function PatientDashboard() {
   const { user } = useAuth();
+
+  // Appointments
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [apptLoading, setApptLoading] = useState(true);
+  const [apptError, setApptError] = useState('');
+  const [apptPage, setApptPage] = useState(0);
+  const [cancellingId, setCancellingId] = useState<number | null>(null);
 
   // Addresses
   const [addresses, setAddresses] = useState<PatientAddress[]>([]);
@@ -48,12 +96,44 @@ export default function PatientDashboard() {
   const [pwShow, setPwShow] = useState({ current: false, next: false, confirm: false });
 
   useEffect(() => {
+    appointmentsApi
+      .myAppointments()
+      .then((data) => {
+        setAppointments(Array.isArray(data) ? data : []);
+      })
+      .catch((err: unknown) => {
+        setApptError(err instanceof Error ? err.message : 'Error al cargar las citas');
+        setAppointments([]);
+      })
+      .finally(() => setApptLoading(false));
+
     addressesApi
       .list()
       .then(setAddresses)
       .catch(() => setAddresses([]))
       .finally(() => setAddrLoading(false));
   }, []);
+
+  // Derived stats
+  const pendingCount = appointments.filter((a) => a.status === 'PENDING').length;
+  const confirmedCount = appointments.filter((a) => a.status === 'CONFIRMED').length;
+  const totalCount = appointments.length;
+
+  // Pagination
+  const totalPages = Math.ceil(appointments.length / PAGE_SIZE);
+  const paginated = appointments.slice(apptPage * PAGE_SIZE, (apptPage + 1) * PAGE_SIZE);
+
+  async function handleCancel(id: number) {
+    setCancellingId(id);
+    try {
+      const updated = await appointmentsApi.cancel(id);
+      setAppointments((prev) => prev.map((a) => (a.id === id ? updated : a)));
+    } catch {
+      // silently ignore
+    } finally {
+      setCancellingId(null);
+    }
+  }
 
   async function handleAddAddress(e: React.SyntheticEvent) {
     e.preventDefault();
@@ -79,7 +159,7 @@ export default function PatientDashboard() {
       await addressesApi.remove(id);
       setAddresses((prev) => prev.filter((a) => a.id !== id));
     } catch {
-      // silently ignore — address stays in list
+      // silently ignore
     } finally {
       setDeletingId(null);
     }
@@ -135,21 +215,21 @@ export default function PatientDashboard() {
         {[
           {
             label: 'Pendientes',
-            value: '0',
+            value: apptLoading ? '–' : String(pendingCount),
             Icon: Clock,
             iconColor: 'text-amber-600',
             bg: 'bg-amber-50',
           },
           {
             label: 'Confirmadas',
-            value: '0',
+            value: apptLoading ? '–' : String(confirmedCount),
             Icon: CalendarCheck,
             iconColor: 'text-emerald-600',
             bg: 'bg-emerald-50',
           },
           {
             label: 'Total sesiones',
-            value: '0',
+            value: apptLoading ? '–' : String(totalCount),
             Icon: BarChart3,
             iconColor: 'text-primary',
             bg: 'bg-primary/10',
@@ -170,32 +250,142 @@ export default function PatientDashboard() {
         ))}
       </div>
 
-      {/* Appointments */}
+      {/* Appointments table */}
       <div className="bg-white rounded-2xl border border-border p-6 mb-6">
         <div className="flex items-center justify-between mb-5">
-          <h2 className="font-semibold text-foreground">Mis próximas citas</h2>
+          <h2 className="font-semibold text-foreground flex items-center gap-2">
+            <CalendarCheck className="w-4 h-4 text-primary" />
+            Mis citas
+          </h2>
           <Link
             href="/"
-            className="text-primary text-sm font-medium hover:underline flex items-center gap-1"
+            className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'rounded-xl gap-1.5 h-8 text-xs')}
           >
-            Ver todo <ArrowRight className="w-3.5 h-3.5" />
+            <Plus className="w-3.5 h-3.5" />
+            Nueva cita
           </Link>
         </div>
 
-        <div className="text-center py-14 border-2 border-dashed border-border rounded-2xl">
-          <div className="w-16 h-16 bg-muted rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <CalendarCheck className="w-7 h-7 text-muted-foreground" />
+        {apptLoading ? (
+          <div className="space-y-2">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-12 bg-muted animate-pulse rounded-xl" />
+            ))}
           </div>
-          <h3 className="font-semibold text-foreground mb-2">
-            Todavía no tenés citas agendadas
-          </h3>
-          <p className="text-muted-foreground text-sm mb-6 max-w-xs mx-auto">
-            Explorá nuestros servicios y agendá tu primera sesión de terapia
-          </p>
-          <Link href="/" className={cn(buttonVariants(), 'rounded-full px-6')}>
-            Explorar terapias
-          </Link>
-        </div>
+        ) : apptError ? (
+          <div className="text-center py-12 border-2 border-dashed border-destructive/20 rounded-2xl">
+            <p className="text-sm text-destructive font-medium mb-1">No se pudieron cargar las citas</p>
+            <p className="text-xs text-muted-foreground">{apptError}</p>
+          </div>
+        ) : appointments.length === 0 ? (
+          <div className="text-center py-14 border-2 border-dashed border-border rounded-2xl">
+            <div className="w-16 h-16 bg-muted rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <CalendarCheck className="w-7 h-7 text-muted-foreground" />
+            </div>
+            <h3 className="font-semibold text-foreground mb-2">
+              No tienes citas agendadas
+            </h3>
+            <p className="text-muted-foreground text-sm mb-6 max-w-xs mx-auto">
+              Explorá nuestros servicios y agendá tu primera sesión de terapia
+            </p>
+            <Link href="/" className={cn(buttonVariants(), 'rounded-full px-6')}>
+              Explorar terapias
+            </Link>
+          </div>
+        ) : (
+          <>
+            {/* Table — scrollable on small screens */}
+            <div className="overflow-x-auto -mx-1">
+              <table className="w-full min-w-130 text-sm">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="text-left font-medium text-muted-foreground px-3 py-2.5 whitespace-nowrap">Fecha</th>
+                    <th className="text-left font-medium text-muted-foreground px-3 py-2.5 whitespace-nowrap">Hora</th>
+                    <th className="text-left font-medium text-muted-foreground px-3 py-2.5">Notas</th>
+                    <th className="text-left font-medium text-muted-foreground px-3 py-2.5 whitespace-nowrap">Estado</th>
+                    <th className="px-3 py-2.5" />
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {paginated.map((appt) => {
+                    const cfg = STATUS_CONFIG[appt.status];
+                    return (
+                      <tr key={appt.id} className="hover:bg-muted/30 transition-colors">
+                        <td className="px-3 py-3 font-medium text-foreground whitespace-nowrap">
+                          {formatDate(appt.date)}
+                        </td>
+                        <td className="px-3 py-3 text-foreground whitespace-nowrap">
+                          {formatTime(appt.time)}
+                        </td>
+                        <td className="px-3 py-3 text-muted-foreground max-w-50 truncate">
+                          {appt.notes || <span className="text-border">—</span>}
+                        </td>
+                        <td className="px-3 py-3 whitespace-nowrap">
+                          <Badge variant="outline" className={cn('text-xs font-medium', cfg.className)}>
+                            {cfg.label}
+                          </Badge>
+                        </td>
+                        <td className="px-3 py-3 text-right whitespace-nowrap">
+                          {appt.status === 'PENDING' || appt.status === 'CONFIRMED' ? (
+                            <button
+                              onClick={() => handleCancel(appt.id)}
+                              disabled={cancellingId === appt.id}
+                              className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive transition-colors disabled:opacity-40"
+                            >
+                              <Ban className="w-3.5 h-3.5" />
+                              {cancellingId === appt.id ? 'Cancelando…' : 'Cancelar'}
+                            </button>
+                          ) : null}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between mt-4 pt-4 border-t border-border">
+                <p className="text-xs text-muted-foreground">
+                  Mostrando {apptPage * PAGE_SIZE + 1}–{Math.min((apptPage + 1) * PAGE_SIZE, appointments.length)} de {appointments.length}
+                </p>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setApptPage((p) => p - 1)}
+                    disabled={apptPage === 0}
+                    className="p-1.5 rounded-lg border border-border text-muted-foreground hover:text-foreground hover:bg-muted/50 disabled:opacity-40 disabled:pointer-events-none transition-colors"
+                    aria-label="Página anterior"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  {Array.from({ length: totalPages }, (_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setApptPage(i)}
+                      className={cn(
+                        'w-8 h-8 rounded-lg text-xs font-medium transition-colors',
+                        i === apptPage
+                          ? 'bg-primary text-primary-foreground'
+                          : 'border border-border text-muted-foreground hover:bg-muted/50'
+                      )}
+                    >
+                      {i + 1}
+                    </button>
+                  ))}
+                  <button
+                    onClick={() => setApptPage((p) => p + 1)}
+                    disabled={apptPage === totalPages - 1}
+                    className="p-1.5 rounded-lg border border-border text-muted-foreground hover:text-foreground hover:bg-muted/50 disabled:opacity-40 disabled:pointer-events-none transition-colors"
+                    aria-label="Página siguiente"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
+        )}
       </div>
 
       {/* Addresses */}

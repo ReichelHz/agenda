@@ -36,4 +36,13 @@ public class AvailabilityController {
     public List<Availability> getByProfessional(@PathVariable Long id) {
         return availabilityRepository.findByProfessionalId(id);
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        if (!availabilityRepository.existsById(id)) {
+            return ResponseEntity.notFound().build();
+        }
+        availabilityRepository.deleteById(id);
+        return ResponseEntity.noContent().build();
+    }
 }

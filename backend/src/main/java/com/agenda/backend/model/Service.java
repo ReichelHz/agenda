@@ -29,4 +29,11 @@ public class Service {
     @ManyToOne
     @JoinColumn(name = "professional_id")
     private User professional;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, columnDefinition = "VARCHAR(30) DEFAULT 'PRESENCIAL'")
+    private ServiceModality modality = ServiceModality.PRESENCIAL;
+
+    @Column(nullable = false, columnDefinition = "BOOLEAN DEFAULT TRUE")
+    private boolean active = true;
 }

@@ -1,6 +1,7 @@
 package com.agenda.backend.controller.dto;
 
 import com.agenda.backend.model.Service;
+import com.agenda.backend.model.ServiceModality;
 
 import java.math.BigDecimal;
 
@@ -10,6 +11,7 @@ public record ServiceResponse(
         String description,
         BigDecimal price,
         Integer durationMinutes,
+        ServiceModality modality,
         ProfessionalInfo professional
 ) {
     public record ProfessionalInfo(Long id, String name) {}
@@ -26,6 +28,7 @@ public record ServiceResponse(
                 service.getDescription(),
                 service.getPrice(),
                 service.getDurationMinutes(),
+                service.getModality() != null ? service.getModality() : ServiceModality.PRESENCIAL,
                 prof);
     }
 }

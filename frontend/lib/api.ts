@@ -87,13 +87,37 @@ export const usersApi = {
     }),
 };
 
+// Professional profile
+export type ProfessionalProfile = {
+  id: number;
+  name: string;
+  email: string;
+  description?: string;
+  phone?: string;
+  birthDate?: string;
+  homeVisitFee?: number;
+  allowsHomeVisit: boolean;
+};
+
+export const professionalApi = {
+  getSettings: () => request<ProfessionalProfile>('/api/professional/settings'),
+  updateSettings: (data: Partial<Omit<ProfessionalProfile, 'id' | 'email'>>) =>
+    request<ProfessionalProfile>('/api/professional/settings', {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
+};
+
 // Services
+export type ServiceModality = 'PRESENCIAL' | 'VIRTUAL' | 'AMBAS';
+
 export type Service = {
   id: number;
   name: string;
   description?: string;
   price: number;
   durationMinutes?: number;
+  modality: ServiceModality;
   professional?: { id: number; name: string } | null;
 };
 
@@ -113,11 +137,18 @@ export const servicesApi = {
   },
   byProfessional: (id: number) =>
     request<Service[]>(`/api/services/professional/${id}`),
-  create: (data: { name: string; description: string; price: number; durationMinutes?: number; professional?: { id: number } }) =>
+  create: (data: { name: string; description: string; price: number; durationMinutes?: number; modality: ServiceModality; professional?: { id: number } }) =>
     request<Service>('/api/services', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
+  update: (id: number, data: { name?: string; description?: string; price?: number; durationMinutes?: number; modality?: ServiceModality }) =>
+    request<Service>(`/api/services/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+  delete: (id: number) =>
+    request<void>(`/api/services/${id}`, { method: 'DELETE' }),
 };
 
 // Availabilities
@@ -150,6 +181,8 @@ export const availabilitiesApi = {
       method: 'POST',
       body: JSON.stringify(data),
     }),
+  delete: (id: number) =>
+    request<void>(`/api/availabilities/${id}`, { method: 'DELETE' }),
 };
 
 // Appointments
@@ -176,12 +209,16 @@ export const appointmentsApi = {
     date: string;
     time: string;
     notes?: string;
+    locationType?: 'OFFICE' | 'HOME' | 'VIRTUAL';
+    address?: string;
   }) =>
     request<Appointment>('/api/appointments', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
   myAppointments: () => request<Appointment[]>('/api/appointments/me'),
+  occupiedTimes: (professionalId: number, date: string) =>
+    request<string[]>(`/api/appointments/occupied?professionalId=${professionalId}&date=${date}`),
   cancel: (id: number) =>
     request<Appointment>(`/api/appointments/${id}/cancel`, { method: 'PATCH' }),
 };

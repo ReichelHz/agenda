@@ -10,7 +10,7 @@ import java.util.List;
 
 @Repository
 public interface ServiceRepository extends JpaRepository<Service, Long> {
-    Page<Service> findByProfessionalIsNotNull(Pageable pageable);
-    Page<Service> findByProfessionalIsNotNullAndNameContainingIgnoreCase(String name, Pageable pageable);
-    List<Service> findByProfessionalId(Long professionalId);
+    Page<Service> findByProfessionalIsNotNullAndActiveTrue(Pageable pageable);
+    Page<Service> findByProfessionalIsNotNullAndActiveTrueAndNameContainingIgnoreCase(String name, Pageable pageable);
+    List<Service> findByProfessionalIdAndActiveTrue(Long professionalId);
 }

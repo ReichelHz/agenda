@@ -28,6 +28,11 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
 
     java.util.List<Appointment> findAllByPatientId(Long patientId);
     java.util.List<Appointment> findAllByProfessionalId(Long professionalId);
+    java.util.List<Appointment> findAllByProfessionalIdAndDateAndStatusNot(
+        Long professionalId,
+        java.time.LocalDate date,
+        com.agenda.backend.model.AppointmentStatus status
+    );
     
     @Query(
         "SELECT a FROM Appointment a WHERE a.reminderSent = false " +
