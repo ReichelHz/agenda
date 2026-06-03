@@ -50,7 +50,7 @@ export function TimeSlotPicker({
     return (
       <div className="flex items-center gap-2 text-sm text-muted-foreground border border-input rounded-xl px-4 py-3 bg-muted/30">
         <Clock className="w-4 h-4 shrink-0" />
-        Seleccioná una fecha para ver los horarios disponibles
+        Selecciona una fecha para ver los horarios disponibles
       </div>
     );
   }

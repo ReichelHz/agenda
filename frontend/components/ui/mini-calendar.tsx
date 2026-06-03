@@ -142,7 +142,7 @@ export function MiniCalendar({ value, onChange, availableDays }: MiniCalendarPro
         <div className="px-4 pb-3 text-xs text-muted-foreground text-center border-t border-border pt-2">
           Seleccionado:{' '}
           <span className="font-medium text-foreground">
-            {new Date(value + 'T00:00:00').toLocaleDateString('es-AR', {
+            {new Date(value + 'T00:00:00').toLocaleDateString('es', {
               weekday: 'long', day: 'numeric', month: 'long',
             })}
           </span>

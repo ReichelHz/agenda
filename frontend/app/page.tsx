@@ -110,7 +110,7 @@ export default async function LandingPage({
                 <Search className="w-5 h-5 text-muted-foreground shrink-0" />
                 <input
                   type="text"
-                  placeholder="¿Qué terapia buscás?"
+                  placeholder="¿Qué terapia buscas?"
                   className="w-full py-3 text-foreground placeholder:text-muted-foreground text-sm outline-none bg-transparent"
                 />
               </div>
@@ -312,15 +312,15 @@ export default async function LandingPage({
           <div className="text-center mb-14">
             <h2 className="text-3xl font-bold text-foreground mb-3">¿Cómo funciona?</h2>
             <p className="text-muted-foreground max-w-md mx-auto">
-              Agendá tu sesión en minutos, como usuario registrado o como invitado
+              Agenda tu sesión en minutos, como usuario registrado o como invitado
             </p>
           </div>
 
           <div className="grid sm:grid-cols-3 gap-10">
             {[
-              { Icon: Search,      step: '01', title: 'Explorá los servicios',  desc: 'Encontrá el tratamiento que necesitás entre nuestra variedad de terapias alternativas.' },
-              { Icon: CalendarDays,step: '02', title: 'Elegí fecha y horario',  desc: 'Consultá la disponibilidad del profesional y seleccioná el turno que mejor te quede.' },
-              { Icon: ShieldCheck, step: '03', title: 'Recibí confirmación',    desc: 'Te llega un email con todos los detalles de tu cita. Sin sorpresas.' },
+              { Icon: Search,      step: '01', title: 'Explora los servicios',  desc: 'Encuentra el tratamiento que necesitas entre nuestra variedad de terapias alternativas.' },
+              { Icon: CalendarDays,step: '02', title: 'Elige fecha y horario',  desc: 'Consulta la disponibilidad del profesional y selecciona el horario que mejor te convenga.' },
+              { Icon: ShieldCheck, step: '03', title: 'Recibe confirmación',    desc: 'Te llega un email con todos los detalles de tu cita. Sin sorpresas.' },
             ].map(({ Icon, step, title, desc }) => (
               <div key={step} className="flex flex-col items-center text-center">
                 <div className="relative mb-5">
@@ -346,10 +346,10 @@ export default async function LandingPage({
             <Leaf className="w-7 h-7 text-primary" />
           </div>
           <h2 className="text-3xl font-bold text-foreground mb-4">
-            Empezá tu camino hacia el bienestar
+            Empieza tu camino hacia el bienestar
           </h2>
           <p className="text-muted-foreground mb-8 leading-relaxed">
-            Registrate gratis en menos de 2 minutos, o agendá directamente como
+            Regístrate gratis en menos de 2 minutos, o agenda directamente como
             invitado sin crear una cuenta.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">

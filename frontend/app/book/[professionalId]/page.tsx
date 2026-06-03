@@ -116,11 +116,11 @@ export default function BookPage({
     e.preventDefault();
     setErrorMsg('');
     if (!form.preferredDate) {
-      setErrorMsg('Seleccioná una fecha antes de continuar.');
+      setErrorMsg('Selecciona una fecha antes de continuar.');
       return;
     }
     if (!form.preferredTime) {
-      setErrorMsg('Seleccioná un horario antes de continuar.');
+      setErrorMsg('Selecciona un horario antes de continuar.');
       return;
     }
     setStatus('submitting');
@@ -241,7 +241,7 @@ export default function BookPage({
         </Link>
         <h1 className="text-2xl font-bold text-foreground">Solicitar turno</h1>
         <p className="text-muted-foreground text-sm mt-1">
-          Completá el formulario — no necesitás estar registrado
+          Completa el formulario — no necesitas estar registrado
         </p>
       </div>
 
@@ -313,7 +313,7 @@ export default function BookPage({
                       onChange={(e) => setField('serviceId', e.target.value)}
                       className="w-full h-11 border border-input rounded-lg px-3 text-sm bg-transparent focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-ring"
                     >
-                      <option value="">Seleccioná un servicio</option>
+                      <option value="">Selecciona un servicio</option>
                       {services.map((sv) => (
                         <option key={sv.id} value={sv.id}>
                           {sv.name} — ${sv.price.toLocaleString()}
@@ -336,7 +336,7 @@ export default function BookPage({
                     availableDays={availableDays}
                   />
                   {!form.preferredDate && (
-                    <p className="text-xs text-destructive">Seleccioná una fecha</p>
+                    <p className="text-xs text-destructive">Selecciona una fecha</p>
                   )}
                 </div>
                 <div className="space-y-1.5">
@@ -348,7 +348,7 @@ export default function BookPage({
                     occupiedTimes={occupiedTimes}
                   />
                   {form.preferredDate && !form.preferredTime && (
-                    <p className="text-xs text-destructive">Seleccioná un horario</p>
+                    <p className="text-xs text-destructive">Selecciona un horario</p>
                   )}
                 </div>
               </div>
@@ -361,7 +361,7 @@ export default function BookPage({
                 Modalidad de atención
               </h2>
               {!selectedService && (
-                <p className="text-xs text-muted-foreground mb-4">Seleccioná un servicio para ver las modalidades disponibles.</p>
+                <p className="text-xs text-muted-foreground mb-4">Selecciona un servicio para ver las modalidades disponibles.</p>
               )}
               {selectedService && (
                 <p className="text-xs text-muted-foreground mb-4">
@@ -393,7 +393,7 @@ export default function BookPage({
                       <div>
                         <p className="text-sm font-medium text-foreground">Presencial</p>
                         <p className="text-xs text-muted-foreground">
-                          {presencialEnabled ? 'Asistís al consultorio' : 'No disponible'}
+                          {presencialEnabled ? 'Asiste al consultorio' : 'No disponible'}
                         </p>
                       </div>
                     </button>
@@ -434,7 +434,7 @@ export default function BookPage({
               <Textarea
                 value={form.notes}
                 onChange={(e) => setField('notes', e.target.value)}
-                placeholder="Contanos brevemente tu motivo de consulta, condición especial o cualquier información relevante..."
+                placeholder="Cuéntanos brevemente tu motivo de consulta, condición especial o cualquier información relevante..."
                 rows={4}
                 className="resize-none"
               />
@@ -456,9 +456,9 @@ export default function BookPage({
             </Button>
 
             <p className="text-xs text-muted-foreground text-center">
-              ¿Querés gestionar tus citas fácilmente?{' '}
+              ¿Quieres gestionar tus citas fácilmente?{' '}
               <Link href="/register" className="text-primary hover:underline">
-                Creá una cuenta gratis
+                Crea una cuenta gratis
               </Link>
             </p>
           </form>

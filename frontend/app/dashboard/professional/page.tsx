@@ -350,7 +350,7 @@ export default function ProfessionalDashboard() {
             <h1 className="text-2xl font-bold text-foreground">Panel Profesional</h1>
           </div>
           <p className="text-muted-foreground text-sm">
-            Hola, <strong>{profile?.name ?? user?.name}</strong> — gestioná tus horarios y servicios
+            Hola, <strong>{profile?.name ?? user?.name}</strong> — gestiona tus horarios y servicios
           </p>
         </div>
 
@@ -502,7 +502,7 @@ export default function ProfessionalDashboard() {
                 <div className="text-center py-12">
                   <Calendar className="w-10 h-10 text-muted-foreground/40 mx-auto mb-3" />
                   <p className="text-sm text-muted-foreground">
-                    Todavía no cargaste horarios
+                    Todavía no has cargado horarios
                   </p>
                 </div>
               ) : (
@@ -898,7 +898,7 @@ export default function ProfessionalDashboard() {
                     <Textarea
                       value={profileForm.description}
                       onChange={(e) => setProfileForm((p) => ({ ...p, description: e.target.value }))}
-                      placeholder="Contá brevemente tu especialidad, formación o enfoque..."
+                      placeholder="Cuenta brevemente tu especialidad, formación o enfoque..."
                       rows={4}
                       className="resize-none"
                     />
@@ -995,7 +995,7 @@ export default function ProfessionalDashboard() {
                   </Button>
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">
-                  Compartí este link para que tus pacientes reserven online
+                  Comparte este enlace para que tus pacientes reserven en línea
                 </p>
               </div>
 

@@ -22,11 +22,14 @@ public class MailService {
 
     private final JavaMailSender mailSender;
     private final String from;
+    private final String frontendUrl;
 
     public MailService(JavaMailSender mailSender,
-                       @Value("${app.mail.from}") String from) {
+                       @Value("${app.mail.from}") String from,
+                       @Value("${app.frontend.url:http://localhost:3000}") String frontendUrl) {
         this.mailSender = mailSender;
         this.from = from;
+        this.frontendUrl = frontendUrl;
     }
 
     // =========================
@@ -94,11 +97,33 @@ public class MailService {
     // =========================
 
     private String buildBody(String title, EmailAppointmentSnapshot s) {
-        return title + "\n\n"
-                + "Profesional: " + safeText(s.professionalName(), "Profesional") + "\n"
-                + "Fecha: " + (s.date() != null ? s.date() : "No especificada") + "\n"
-                + "Hora: " + (s.time() != null ? s.time() : "No especificada") + "\n"
-                + "Código de reserva: " + safeText(s.reservationCode(), "No disponible") + "\n";
+        String code  = safeCode(s);
+        String email = safeEmail(s);
+
+        StringBuilder sb = new StringBuilder()
+                .append(title).append("\n\n")
+                .append("Profesional:       ").append(safeText(s.professionalName(), "Profesional")).append("\n")
+                .append("Fecha:             ").append(s.date() != null ? s.date() : "No especificada").append("\n")
+                .append("Hora:              ").append(s.time() != null ? s.time() : "No especificada").append("\n")
+                .append("Código de reserva: ").append(safeText(s.reservationCode(), "No disponible")).append("\n");
+
+        if (code != null && email != null) {
+            String encodedEmail;
+            try {
+                encodedEmail = java.net.URLEncoder.encode(email, java.nio.charset.StandardCharsets.UTF_8);
+            } catch (Exception ex) {
+                encodedEmail = email;
+            }
+            String managementUrl = frontendUrl + "/citas/" + code + "?email=" + encodedEmail;
+
+            sb.append("\n")
+              .append("─────────────────────────────────────────\n")
+              .append("Gestiona tu cita (confirmar o cancelar):\n")
+              .append(managementUrl).append("\n")
+              .append("─────────────────────────────────────────\n");
+        }
+
+        return sb.toString();
     }
 
     // =========================

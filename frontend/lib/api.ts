@@ -187,17 +187,21 @@ export const availabilitiesApi = {
 
 // Appointments
 export type AppointmentStatus = 'PENDING' | 'CONFIRMED' | 'CANCELLED';
+export type LocationType = 'OFFICE' | 'HOME' | 'VIRTUAL';
 
 export type Appointment = {
   id: number;
-  professionalId: number;
+  reservationCode: string;
   patientName: string;
   patientEmail: string;
-  serviceId: number;
+  professionalName: string;
+  serviceName: string;
   date: string;
   time: string;
   status: AppointmentStatus;
-  notes?: string;
+  locationType?: LocationType;
+  address?: string;
+  totalPrice?: number;
 };
 
 export const appointmentsApi = {
@@ -209,7 +213,7 @@ export const appointmentsApi = {
     date: string;
     time: string;
     notes?: string;
-    locationType?: 'OFFICE' | 'HOME' | 'VIRTUAL';
+    locationType?: LocationType;
     address?: string;
   }) =>
     request<Appointment>('/api/appointments', {
@@ -219,8 +223,18 @@ export const appointmentsApi = {
   myAppointments: () => request<Appointment[]>('/api/appointments/me'),
   occupiedTimes: (professionalId: number, date: string) =>
     request<string[]>(`/api/appointments/occupied?professionalId=${professionalId}&date=${date}`),
-  cancel: (id: number) =>
-    request<Appointment>(`/api/appointments/${id}/cancel`, { method: 'PATCH' }),
+  getByCode: (code: string, email: string) =>
+    request<Appointment>(`/api/appointments/by-code/${code}?email=${encodeURIComponent(email)}`),
+  updateStatusByCode: (code: string, email: string, status: AppointmentStatus) =>
+    request<Appointment>(
+      `/api/appointments/${code}/status?email=${encodeURIComponent(email)}&status=${status}`,
+      { method: 'PATCH' }
+    ),
+  cancel: (code: string, email: string) =>
+    request<Appointment>(
+      `/api/appointments/${code}/status?email=${encodeURIComponent(email)}&status=CANCELLED`,
+      { method: 'PATCH' }
+    ),
 };
 
 // Addresses

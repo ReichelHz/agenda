@@ -84,7 +84,7 @@ export default function LoginPage() {
               Bienvenido de vuelta
             </h1>
             <p className="text-muted-foreground mt-1.5">
-              Iniciá sesión para gestionar tus citas
+              Inicia sesión para gestionar tus citas
             </p>
           </div>
 
@@ -156,7 +156,7 @@ export default function LoginPage() {
             </div>
             <div className="relative flex justify-center">
               <span className="text-xs text-muted-foreground bg-background px-3">
-                ¿No tenés cuenta?
+                ¿No tienes cuenta?
               </span>
             </div>
           </div>

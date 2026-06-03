@@ -94,7 +94,7 @@ function RegisterForm() {
         </Link>
 
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-foreground">Creá tu cuenta</h1>
+          <h1 className="text-2xl font-bold text-foreground">Crea tu cuenta</h1>
           <p className="text-muted-foreground mt-1.5">Gratis, en menos de 2 minutos</p>
         </div>
 
@@ -230,9 +230,9 @@ function RegisterForm() {
         </form>
 
         <p className="text-center text-sm text-muted-foreground mt-6">
-          ¿Ya tenés cuenta?{' '}
+          ¿Ya tienes cuenta?{' '}
           <Link href="/login" className="text-primary font-medium hover:underline">
-            Iniciá sesión
+            Inicia sesión
           </Link>
         </p>
       </div>

@@ -123,11 +123,11 @@ export default function PatientDashboard() {
   const totalPages = Math.ceil(appointments.length / PAGE_SIZE);
   const paginated = appointments.slice(apptPage * PAGE_SIZE, (apptPage + 1) * PAGE_SIZE);
 
-  async function handleCancel(id: number) {
-    setCancellingId(id);
+  async function handleCancel(appt: Appointment) {
+    setCancellingId(appt.id);
     try {
-      const updated = await appointmentsApi.cancel(id);
-      setAppointments((prev) => prev.map((a) => (a.id === id ? updated : a)));
+      const updated = await appointmentsApi.cancel(appt.reservationCode, appt.patientEmail);
+      setAppointments((prev) => prev.map((a) => (a.id === appt.id ? updated : a)));
     } catch {
       // silently ignore
     } finally {
@@ -198,7 +198,7 @@ export default function PatientDashboard() {
             </h1>
           </div>
           <p className="text-muted-foreground text-sm">
-            Gestioná tus citas y descubrí nuevos tratamientos
+            Gestiona tus citas y descubre nuevos tratamientos
           </p>
         </div>
         <Link
@@ -286,7 +286,7 @@ export default function PatientDashboard() {
               No tienes citas agendadas
             </h3>
             <p className="text-muted-foreground text-sm mb-6 max-w-xs mx-auto">
-              Explorá nuestros servicios y agendá tu primera sesión de terapia
+              Explora nuestros servicios y agenda tu primera sesión de terapia
             </p>
             <Link href="/" className={cn(buttonVariants(), 'rounded-full px-6')}>
               Explorar terapias
@@ -318,7 +318,7 @@ export default function PatientDashboard() {
                           {formatTime(appt.time)}
                         </td>
                         <td className="px-3 py-3 text-muted-foreground max-w-50 truncate">
-                          {appt.notes || <span className="text-border">—</span>}
+                          <span className="text-border">—</span>
                         </td>
                         <td className="px-3 py-3 whitespace-nowrap">
                           <Badge variant="outline" className={cn('text-xs font-medium', cfg.className)}>
@@ -328,7 +328,7 @@ export default function PatientDashboard() {
                         <td className="px-3 py-3 text-right whitespace-nowrap">
                           {appt.status === 'PENDING' || appt.status === 'CONFIRMED' ? (
                             <button
-                              onClick={() => handleCancel(appt.id)}
+                              onClick={() => handleCancel(appt)}
                               disabled={cancellingId === appt.id}
                               className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive transition-colors disabled:opacity-40"
                             >
@@ -451,7 +451,7 @@ export default function PatientDashboard() {
         ) : addresses.length === 0 ? (
           <div className="text-center py-10 border-2 border-dashed border-border rounded-2xl">
             <Home className="w-8 h-8 text-muted-foreground/40 mx-auto mb-2" />
-            <p className="text-sm text-muted-foreground">No tenés direcciones guardadas</p>
+            <p className="text-sm text-muted-foreground">No tienes direcciones guardadas</p>
             <button
               onClick={() => setShowAddrForm(true)}
               className="text-primary text-sm font-medium hover:underline mt-1"
