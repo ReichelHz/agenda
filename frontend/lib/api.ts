@@ -235,6 +235,8 @@ export const appointmentsApi = {
       `/api/appointments/${code}/status?email=${encodeURIComponent(email)}&status=CANCELLED`,
       { method: 'PATCH' }
     ),
+  delete: (id: number) =>
+    request<void>(`/api/appointments/${id}`, { method: 'DELETE' }),
 };
 
 // Addresses

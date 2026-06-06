@@ -77,6 +77,7 @@ export default function PatientDashboard() {
   const [apptError, setApptError] = useState('');
   const [apptPage, setApptPage] = useState(0);
   const [cancellingId, setCancellingId] = useState<number | null>(null);
+  const [deletingApptId, setDeletingApptId] = useState<number | null>(null);
 
   // Addresses
   const [addresses, setAddresses] = useState<PatientAddress[]>([]);
@@ -132,6 +133,24 @@ export default function PatientDashboard() {
       // silently ignore
     } finally {
       setCancellingId(null);
+    }
+  }
+
+  async function handleDeleteAppointment(id: number) {
+    setDeletingApptId(id);
+    try {
+      await appointmentsApi.delete(id);
+      setAppointments((prev) => prev.filter((a) => a.id !== id));
+      // Ajustar página si quedó vacía
+      setApptPage((p) => {
+        const remaining = appointments.length - 1;
+        const maxPage = Math.max(0, Math.ceil(remaining / PAGE_SIZE) - 1);
+        return Math.min(p, maxPage);
+      });
+    } catch {
+      // silently ignore
+    } finally {
+      setDeletingApptId(null);
     }
   }
 
@@ -334,6 +353,15 @@ export default function PatientDashboard() {
                             >
                               <Ban className="w-3.5 h-3.5" />
                               {cancellingId === appt.id ? 'Cancelando…' : 'Cancelar'}
+                            </button>
+                          ) : appt.status === 'CANCELLED' ? (
+                            <button
+                              onClick={() => handleDeleteAppointment(appt.id)}
+                              disabled={deletingApptId === appt.id}
+                              className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive transition-colors disabled:opacity-40"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              {deletingApptId === appt.id ? 'Eliminando…' : 'Eliminar'}
                             </button>
                           ) : null}
                         </td>
