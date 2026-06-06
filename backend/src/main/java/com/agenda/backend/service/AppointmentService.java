@@ -154,6 +154,22 @@ public class AppointmentService {
         return savedAppointment;
     }
 
+    @Transactional
+    public void deleteCancelledAppointment(Long id, Long patientId) {
+        Appointment appointment = appointmentRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Cita no encontrada"));
+
+        if (appointment.getPatient() == null || !appointment.getPatient().getId().equals(patientId)) {
+            throw new IllegalArgumentException("No tienes permiso para eliminar esta cita");
+        }
+
+        if (appointment.getStatus() != AppointmentStatus.CANCELLED) {
+            throw new IllegalStateException("Solo se pueden eliminar citas canceladas");
+        }
+
+        appointmentRepository.deleteById(id);
+    }
+
     public java.util.List<Appointment> listByPatientId(Long patientId) {
         return appointmentRepository.findAllByPatientId(patientId);
     }
