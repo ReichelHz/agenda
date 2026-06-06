@@ -51,18 +51,6 @@ export default function ProfessionalDashboard() {
   // Availability state
   const [availabilities, setAvailabilities] = useState<Availability[]>([]);
   const [avLoading, setAvLoading] = useState(true);
-  const [avForm, setAvForm] = useState<{
-    dayOfWeek: DayOfWeek;
-    startTime: string;
-    endTime: string;
-  }>({
-    dayOfWeek: 'MONDAY',
-    startTime: '09:00',
-    endTime: '17:00',
-  });
-  const [avSaving, setAvSaving] = useState(false);
-  const [avError, setAvError] = useState('');
-  const [avSuccess, setAvSuccess] = useState('');
 
   // Services state
   const [services, setServices] = useState<Service[]>([]);
@@ -72,6 +60,14 @@ export default function ProfessionalDashboard() {
   const [svSaving, setSvSaving] = useState(false);
   const [svError, setSvError] = useState('');
   const [svSuccess, setSvSuccess] = useState('');
+
+  // Availability slots staged during service creation
+  const [svAvSlots, setSvAvSlots] = useState<{ dayOfWeek: DayOfWeek; startTime: string; endTime: string }[]>([]);
+  const [svAvForm, setSvAvForm] = useState<{ startTime: string; endTime: string }>({
+    startTime: '09:00',
+    endTime: '17:00',
+  });
+  const [svAvSelectedDay, setSvAvSelectedDay] = useState<DayOfWeek>('MONDAY');
 
   // Service editing state
   const [editingServiceId, setEditingServiceId] = useState<number | null>(null);
@@ -139,29 +135,6 @@ export default function ProfessionalDashboard() {
       .finally(() => setProfileLoading(false));
   }, []);
 
-  async function handleAddAvailability(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    if (!user) return;
-    setAvError('');
-    setAvSuccess('');
-    setAvSaving(true);
-    try {
-      const created = await availabilitiesApi.create({
-        professional: { id: user.id },
-        dayOfWeek: avForm.dayOfWeek,
-        startTime: avForm.startTime + ':00',
-        endTime: avForm.endTime + ':00',
-      });
-      setAvailabilities((prev) => [...prev, created]);
-      setAvSuccess('Horario agregado correctamente');
-      setTimeout(() => setAvSuccess(''), 4000);
-    } catch (err: unknown) {
-      setAvError(err instanceof Error ? err.message : 'Error al guardar');
-    } finally {
-      setAvSaving(false);
-    }
-  }
-
   async function handleAddService(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!user) return;
@@ -178,8 +151,25 @@ export default function ProfessionalDashboard() {
         professional: { id: user.id },
       });
       setServices((prev) => [...prev, created]);
+      // Create staged availability slots
+      for (const slot of svAvSlots) {
+        try {
+          const av = await availabilitiesApi.create({
+            professional: { id: user.id },
+            dayOfWeek: slot.dayOfWeek,
+            startTime: slot.startTime + ':00',
+            endTime: slot.endTime + ':00',
+          });
+          setAvailabilities((prev) => [...prev, av]);
+        } catch {
+          // non-blocking: availability errors don't fail the whole operation
+        }
+      }
       setSvForm({ name: '', description: '', price: '', duration: '', modality: 'PRESENCIAL' });
       setSvDurationMode('preset');
+      setSvAvSlots([]);
+      setSvAvForm({ startTime: '09:00', endTime: '17:00' });
+      setSvAvSelectedDay('MONDAY');
       setSvSuccess('Servicio creado correctamente');
       setTimeout(() => setSvSuccess(''), 4000);
     } catch (err: unknown) {
@@ -228,8 +218,8 @@ export default function ProfessionalDashboard() {
       await availabilitiesApi.delete(id);
       setAvailabilities((prev) => prev.filter((a) => a.id !== id));
     } catch {
-      setAvError('No se pudo eliminar el horario');
-      setTimeout(() => setAvError(''), 4000);
+      setSvError('No se pudo eliminar el horario');
+      setTimeout(() => setSvError(''), 4000);
     }
   }
 
@@ -395,12 +385,8 @@ export default function ProfessionalDashboard() {
       </div>
 
       {/* Tabs */}
-      <Tabs defaultValue="availability">
+      <Tabs defaultValue="services">
         <TabsList variant="line" className="mb-6 w-full border-b border-border rounded-none pb-0">
-          <TabsTrigger value="availability" className="gap-2 pb-3">
-            <Calendar className="w-4 h-4" />
-            Disponibilidad
-          </TabsTrigger>
           <TabsTrigger value="services" className="gap-2 pb-3">
             <Scissors className="w-4 h-4" />
             Servicios
@@ -410,133 +396,6 @@ export default function ProfessionalDashboard() {
             Mi Perfil
           </TabsTrigger>
         </TabsList>
-
-        {/* ── Availability ── */}
-        <TabsContent value="availability">
-          <div className="grid lg:grid-cols-2 gap-6">
-            {/* Form */}
-            <div className="bg-white rounded-2xl border border-border p-6">
-              <h2 className="font-semibold text-foreground mb-5 flex items-center gap-2">
-                <Plus className="w-4 h-4 text-primary" />
-                Agregar bloque de horario
-              </h2>
-
-              <form onSubmit={handleAddAvailability} className="space-y-4">
-                <div className="space-y-1.5">
-                  <Label className="text-sm font-medium">Día de la semana</Label>
-                  <select
-                    value={avForm.dayOfWeek}
-                    onChange={(e) =>
-                      setAvForm((p) => ({ ...p, dayOfWeek: e.target.value as DayOfWeek }))
-                    }
-                    className="w-full h-11 border border-input rounded-lg px-3 text-sm bg-transparent focus:outline-none focus:ring-2 focus:ring-ring/50 focus:border-ring"
-                  >
-                    {DAYS_ORDER.map((day) => (
-                      <option key={day} value={day}>
-                        {DAY_LABELS[day]}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <Label className="text-sm font-medium">Hora inicio</Label>
-                    <Input
-                      type="time"
-                      value={avForm.startTime}
-                      onChange={(e) =>
-                        setAvForm((p) => ({ ...p, startTime: e.target.value }))
-                      }
-                      className="h-11"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-sm font-medium">Hora fin</Label>
-                    <Input
-                      type="time"
-                      value={avForm.endTime}
-                      onChange={(e) =>
-                        setAvForm((p) => ({ ...p, endTime: e.target.value }))
-                      }
-                      className="h-11"
-                    />
-                  </div>
-                </div>
-
-                {avError && (
-                  <p className="text-destructive text-sm bg-destructive/8 border border-destructive/20 px-3 py-2 rounded-lg">
-                    {avError}
-                  </p>
-                )}
-                {avSuccess && (
-                  <p className="text-emerald-700 text-sm bg-emerald-50 border border-emerald-200 px-3 py-2 rounded-lg flex items-center gap-1.5">
-                    <CheckCircle2 className="w-3.5 h-3.5" /> {avSuccess}
-                  </p>
-                )}
-
-                <Button
-                  type="submit"
-                  disabled={avSaving}
-                  className="w-full h-11 rounded-xl"
-                >
-                  {avSaving ? 'Guardando...' : '+ Agregar horario'}
-                </Button>
-              </form>
-            </div>
-
-            {/* Current schedule */}
-            <div className="bg-white rounded-2xl border border-border p-6">
-              <h2 className="font-semibold text-foreground mb-5 flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-primary" />
-                Mi disponibilidad actual
-              </h2>
-
-              {avLoading ? (
-                <div className="space-y-2">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="h-10 bg-muted animate-pulse rounded-lg" />
-                  ))}
-                </div>
-              ) : activeDays.length === 0 ? (
-                <div className="text-center py-12">
-                  <Calendar className="w-10 h-10 text-muted-foreground/40 mx-auto mb-3" />
-                  <p className="text-sm text-muted-foreground">
-                    Todavía no has cargado horarios
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {activeDays.map((day) => (
-                    <div key={day} className="flex items-start gap-3">
-                      <Badge variant="secondary" className="w-24 justify-center shrink-0 text-xs mt-1">
-                        {DAY_LABELS[day]}
-                      </Badge>
-                      <div className="flex flex-wrap gap-1.5">
-                        {byDay[day].map((av) => (
-                          <span
-                            key={av.id}
-                            className="group flex items-center gap-1 text-xs bg-primary/8 text-primary border border-primary/20 rounded-md pl-2.5 pr-1.5 py-1 font-medium"
-                          >
-                            {av.startTime.slice(0, 5)} – {av.endTime.slice(0, 5)}
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteAvailability(av.id)}
-                              className="opacity-0 group-hover:opacity-100 ml-0.5 text-primary/60 hover:text-destructive transition-all"
-                              title="Eliminar horario"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </button>
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </TabsContent>
 
         {/* ── Services ── */}
         <TabsContent value="services">
@@ -573,9 +432,12 @@ export default function ProfessionalDashboard() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label className="text-sm font-medium">Precio ($) *</Label>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-medium">Precio *</Label>
+                    <span className="text-xs text-muted-foreground">por sesión</span>
+                  </div>
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-semibold text-sm">$</span>
                     <Input
                       type="number"
                       required
@@ -584,7 +446,7 @@ export default function ProfessionalDashboard() {
                       value={svForm.price}
                       onChange={(e) => setSvForm((p) => ({ ...p, price: e.target.value }))}
                       placeholder="5000"
-                      className="pl-7 h-11"
+                      className="pl-7 h-11 font-medium"
                     />
                   </div>
                 </div>
@@ -648,6 +510,107 @@ export default function ProfessionalDashboard() {
                   </div>
                 </div>
 
+                {/* ── Disponibilidad horaria ── */}
+                <div className="border-t border-border/60 pt-4 mt-1">
+                  <div className="flex items-center gap-1.5 mb-3">
+                    <Clock className="w-3.5 h-3.5 text-primary" />
+                    <span className="text-sm font-medium text-foreground">Disponibilidad horaria</span>
+                    <span className="text-xs text-muted-foreground">(opcional)</span>
+                  </div>
+
+                  {/* Day pills */}
+                  <div className="grid grid-cols-7 gap-1 mb-3">
+                    {DAYS_ORDER.map((day) => {
+                      const hasSlots = svAvSlots.some((s) => s.dayOfWeek === day);
+                      const isSelected = svAvSelectedDay === day;
+                      return (
+                        <button
+                          key={day}
+                          type="button"
+                          onClick={() => setSvAvSelectedDay(day)}
+                          className={`py-1.5 rounded-lg text-[11px] font-semibold transition-all ${
+                            isSelected
+                              ? 'bg-primary text-white shadow-sm'
+                              : hasSlots
+                              ? 'bg-primary/12 text-primary border border-primary/25'
+                              : 'bg-muted text-muted-foreground hover:bg-muted/70'
+                          }`}
+                        >
+                          {DAY_LABELS[day].slice(0, 2)}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Time inputs for selected day */}
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-xs font-semibold text-muted-foreground w-8 shrink-0">
+                      {DAY_LABELS[svAvSelectedDay].slice(0, 3)}
+                    </span>
+                    <Input
+                      type="time"
+                      value={svAvForm.startTime}
+                      onChange={(e) => setSvAvForm((p) => ({ ...p, startTime: e.target.value }))}
+                      className="h-9 flex-1 text-sm"
+                    />
+                    <span className="text-muted-foreground text-xs">–</span>
+                    <Input
+                      type="time"
+                      value={svAvForm.endTime}
+                      onChange={(e) => setSvAvForm((p) => ({ ...p, endTime: e.target.value }))}
+                      className="h-9 flex-1 text-sm"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-9 px-3 shrink-0"
+                      onClick={() => {
+                        if (!svAvForm.startTime || !svAvForm.endTime) return;
+                        setSvAvSlots((prev) => [
+                          ...prev,
+                          { dayOfWeek: svAvSelectedDay, startTime: svAvForm.startTime, endTime: svAvForm.endTime },
+                        ]);
+                      }}
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+
+                  {/* Staged slots grouped by day */}
+                  {svAvSlots.length > 0 && (
+                    <div className="space-y-1.5 bg-muted/40 rounded-xl px-3 py-2.5">
+                      {DAYS_ORDER.filter((d) => svAvSlots.some((s) => s.dayOfWeek === d)).map((day) => (
+                        <div key={day} className="flex items-center gap-2">
+                          <span className="text-[11px] font-semibold text-muted-foreground w-8 shrink-0">
+                            {DAY_LABELS[day].slice(0, 3)}
+                          </span>
+                          <div className="flex flex-wrap gap-1">
+                            {svAvSlots
+                              .map((slot, i) => ({ slot, i }))
+                              .filter(({ slot }) => slot.dayOfWeek === day)
+                              .map(({ slot, i }) => (
+                                <span
+                                  key={i}
+                                  className="flex items-center gap-1 text-[11px] bg-primary/8 text-primary border border-primary/20 rounded-md pl-2 pr-1 py-0.5 font-medium"
+                                >
+                                  {slot.startTime} – {slot.endTime}
+                                  <button
+                                    type="button"
+                                    onClick={() => setSvAvSlots((prev) => prev.filter((_, j) => j !== i))}
+                                    className="ml-0.5 text-primary/50 hover:text-destructive transition-colors"
+                                  >
+                                    <X className="w-2.5 h-2.5" />
+                                  </button>
+                                </span>
+                              ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
                 {svError && (
                   <p className="text-destructive text-sm bg-destructive/8 border border-destructive/20 px-3 py-2 rounded-lg">
                     {svError}
@@ -659,17 +622,29 @@ export default function ProfessionalDashboard() {
                   </p>
                 )}
 
-                <Button type="submit" disabled={svSaving} className="w-full h-11 rounded-xl">
-                  {svSaving ? 'Guardando...' : '+ Crear servicio'}
+                <Button type="submit" disabled={svSaving} className="w-full h-12 rounded-xl font-semibold gap-2 text-sm shadow-sm shadow-primary/20">
+                  {svSaving ? 'Guardando...' : (
+                    <>
+                      <Plus className="w-4 h-4" />
+                      Crear servicio
+                    </>
+                  )}
                 </Button>
               </form>
             </div>
 
+            {/* Right column: services list + current availability */}
+            <div className="space-y-6">
             {/* Services list */}
             <div className="bg-white rounded-2xl border border-border p-6">
               <h2 className="font-semibold text-foreground mb-5 flex items-center gap-2">
                 <Scissors className="w-4 h-4 text-primary" />
                 Servicios activos
+                {services.length > 0 && (
+                  <span className="ml-auto text-xs font-semibold bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                    {services.length}
+                  </span>
+                )}
               </h2>
 
               {svLoading ? (
@@ -679,9 +654,12 @@ export default function ProfessionalDashboard() {
                   ))}
                 </div>
               ) : services.length === 0 ? (
-                <div className="text-center py-12">
-                  <Scissors className="w-10 h-10 text-muted-foreground/40 mx-auto mb-3" />
-                  <p className="text-sm text-muted-foreground">No hay servicios aún</p>
+                <div className="text-center py-10">
+                  <div className="w-14 h-14 bg-muted/60 rounded-2xl flex items-center justify-center mx-auto mb-3 ring-1 ring-border/50">
+                    <Scissors className="w-6 h-6 text-muted-foreground/40" />
+                  </div>
+                  <p className="text-sm font-medium text-foreground/70 mb-1">Sin servicios aún</p>
+                  <p className="text-xs text-muted-foreground">Creá tu primer servicio desde el formulario de la izquierda</p>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -791,38 +769,84 @@ export default function ProfessionalDashboard() {
                         </Button>
                       </div>
                     ) : (
-                      /* Normal card */
+                      /* Service card */
                       <div
                         key={sv.id}
-                        className="group flex items-center justify-between p-4 rounded-xl bg-muted/50 hover:bg-muted transition-colors"
+                        className="group relative rounded-2xl border border-border/70 bg-white hover:shadow-[0_8px_28px_rgba(0,0,0,0.10)] hover:border-border hover:-translate-y-0.5 transition-all duration-200 overflow-hidden"
                       >
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <p className="font-medium text-foreground text-sm truncate">{sv.name}</p>
-                            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 ${modalityBadge(sv.modality)}`}>
+                        {/* Top modality color bar */}
+                        <div
+                          className={`h-[3px] w-full ${
+                            sv.modality === 'VIRTUAL'
+                              ? 'bg-gradient-to-r from-blue-400 to-sky-500'
+                              : sv.modality === 'AMBAS'
+                              ? 'bg-gradient-to-r from-violet-400 to-purple-500'
+                              : 'bg-gradient-to-r from-emerald-400 to-teal-500'
+                          }`}
+                        />
+
+                        <div className="px-4 pt-4 pb-3.5">
+                          {/* Title + modality badge */}
+                          <div className="flex items-start justify-between gap-2 mb-2">
+                            <p className="font-bold text-sm text-foreground leading-snug line-clamp-2 flex-1">
+                              {sv.name}
+                            </p>
+                            <span
+                              className={`shrink-0 text-[11px] font-semibold px-2.5 py-1 rounded-full ${modalityBadge(sv.modality)}`}
+                            >
                               {modalityText(sv.modality)}
                             </span>
                           </div>
-                          <p className="text-muted-foreground text-xs mt-0.5 line-clamp-1">{sv.description}</p>
-                        </div>
-                        <div className="flex items-center gap-2 ml-4 shrink-0">
-                          <span className="text-primary font-bold text-sm">${sv.price.toLocaleString()}</span>
-                          <button
-                            type="button"
-                            onClick={() => startEditService(sv)}
-                            className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-primary transition-all"
-                            title="Editar servicio"
-                          >
-                            <Pencil className="w-4 h-4" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteService(sv.id)}
-                            className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all"
-                            title="Eliminar servicio"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+
+                          {/* Description */}
+                          <p className="text-[13px] text-muted-foreground/80 leading-relaxed line-clamp-2 mb-3.5">
+                            {sv.description}
+                          </p>
+
+                          {/* Footer row */}
+                          <div className="flex items-center justify-between pt-3 border-t border-border/40">
+                            {/* Duration pill */}
+                            {sv.durationMinutes ? (
+                              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground bg-muted/70 px-2.5 py-1 rounded-full">
+                                <Clock className="w-3 h-3" />
+                                {durationLabel(sv.durationMinutes)}
+                              </span>
+                            ) : (
+                              <span className="text-xs text-muted-foreground/30 italic">Sin duración</span>
+                            )}
+
+                            {/* Price + actions */}
+                            <div className="flex items-center gap-3">
+                              {/* Price block */}
+                              <div className="text-right">
+                                <div className="font-bold text-foreground text-lg leading-none">
+                                  ${sv.price.toLocaleString()}
+                                </div>
+                                <div className="text-muted-foreground text-[10px] mt-0.5 tracking-wide uppercase font-medium">
+                                  por sesión
+                                </div>
+                              </div>
+                              {/* Action buttons */}
+                              <div className="flex items-center gap-0.5 pl-3 border-l border-border/50">
+                                <button
+                                  type="button"
+                                  onClick={() => startEditService(sv)}
+                                  className="w-8 h-8 rounded-xl flex items-center justify-center text-muted-foreground/50 hover:text-primary hover:bg-primary/10 transition-colors"
+                                  title="Editar servicio"
+                                >
+                                  <Pencil className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteService(sv.id)}
+                                  className="w-8 h-8 rounded-xl flex items-center justify-center text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 transition-colors"
+                                  title="Eliminar servicio"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     )
@@ -830,6 +854,56 @@ export default function ProfessionalDashboard() {
                 </div>
               )}
             </div>
+
+            {/* Current availability */}
+            <div className="bg-white rounded-2xl border border-border p-5">
+              <h2 className="font-semibold text-foreground mb-4 flex items-center gap-2 text-sm">
+                <Calendar className="w-4 h-4 text-primary" />
+                Horarios actuales
+              </h2>
+              {avLoading ? (
+                <div className="space-y-2">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="h-8 bg-muted animate-pulse rounded-lg" />
+                  ))}
+                </div>
+              ) : activeDays.length === 0 ? (
+                <div className="text-center py-6">
+                  <Clock className="w-8 h-8 text-muted-foreground/30 mx-auto mb-2" />
+                  <p className="text-xs text-muted-foreground">Sin horarios cargados</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {activeDays.map((day) => (
+                    <div key={day} className="flex items-start gap-2.5">
+                      <Badge variant="secondary" className="text-[10px] w-14 justify-center shrink-0 mt-0.5">
+                        {DAY_LABELS[day].slice(0, 3)}
+                      </Badge>
+                      <div className="flex flex-wrap gap-1">
+                        {byDay[day].map((av) => (
+                          <span
+                            key={av.id}
+                            className="group flex items-center gap-1 text-[11px] bg-primary/8 text-primary border border-primary/20 rounded-md pl-2 pr-1 py-0.5 font-medium"
+                          >
+                            {av.startTime.slice(0, 5)} – {av.endTime.slice(0, 5)}
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteAvailability(av.id)}
+                              className="opacity-0 group-hover:opacity-100 ml-0.5 text-primary/50 hover:text-destructive transition-all"
+                              title="Eliminar horario"
+                            >
+                              <Trash2 className="w-2.5 h-2.5" />
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            </div>{/* end right column */}
           </div>
         </TabsContent>
 

@@ -22,6 +22,7 @@ import {
   ChevronLeft,
   ChevronRight,
   CalendarCheck,
+  Clock,
 } from 'lucide-react';
 
 type CatalogStyle = { Icon: LucideIcon; bg: string; iconColor: string };
@@ -180,40 +181,77 @@ export default async function LandingPage({
                 const style = STYLES[i % STYLES.length];
                 const { Icon } = style;
                 const bookHref = `/book/${service.professional!.id}?serviceId=${service.id}`;
+                const modalityLabel =
+                  service.modality === 'VIRTUAL' ? 'Virtual' :
+                  service.modality === 'AMBAS'   ? 'Presencial · Virtual' :
+                  'Presencial';
+                const modalityClass =
+                  service.modality === 'VIRTUAL' ? 'bg-blue-100/95 text-blue-700' :
+                  service.modality === 'AMBAS'   ? 'bg-purple-100/95 text-purple-700' :
+                  'bg-emerald-100/95 text-emerald-700';
+                const dur = service.durationMinutes;
+                const durLabel = dur
+                  ? dur < 60 ? `${dur} min`
+                  : dur === 60 ? '1 hora'
+                  : `${Math.floor(dur / 60)}h${dur % 60 ? ` ${dur % 60}min` : ''}`
+                  : null;
                 return (
                   <div
                     key={service.id}
-                    className="group flex flex-col rounded-2xl border border-border bg-white overflow-hidden hover:shadow-md transition-shadow duration-300"
+                    className="group flex flex-col rounded-2xl border border-border/70 bg-white overflow-hidden hover:shadow-[0_12px_40px_rgba(0,0,0,0.11)] hover:-translate-y-1 transition-all duration-300"
                   >
+                    {/* Icon area */}
                     <div
                       className={cn(
-                        'relative flex items-center justify-center h-44 transition-transform group-hover:scale-[1.02] duration-300',
+                        'relative flex items-center justify-center h-40 overflow-hidden',
                         style.bg
                       )}
                     >
-                      <Icon className={cn('w-16 h-16', style.iconColor)} strokeWidth={1.25} />
-                      {i === 0 && currentPage === 0 && (
-                        <div className="absolute top-3 left-3">
-                          <Badge className="bg-white text-foreground text-xs font-semibold shadow-sm border-0">
-                            Más popular
+                      <Icon
+                        className={cn('w-16 h-16 opacity-75 group-hover:opacity-90 transition-opacity duration-300', style.iconColor)}
+                        strokeWidth={1.2}
+                      />
+                      {/* Soft bottom gradient */}
+                      <div className="absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-black/10 to-transparent pointer-events-none" />
+
+                      {/* Top badges row */}
+                      <div className="absolute top-3 inset-x-3 flex items-start justify-between gap-2">
+                        {i === 0 && currentPage === 0 ? (
+                          <Badge className="bg-white text-foreground text-[11px] font-bold shadow border-0 py-0.5 px-2.5">
+                            ⭐ Más popular
                           </Badge>
+                        ) : <span />}
+                        <span className={cn('text-[10px] font-semibold px-2.5 py-1 rounded-full backdrop-blur-sm', modalityClass)}>
+                          {modalityLabel}
+                        </span>
+                      </div>
+
+                      {/* Duration pill bottom-right */}
+                      {durLabel && (
+                        <div className="absolute bottom-2.5 right-3">
+                          <span className="flex items-center gap-1 text-[10px] font-semibold bg-white/85 backdrop-blur-sm text-foreground/70 px-2 py-0.5 rounded-full">
+                            <Clock className="w-2.5 h-2.5" />
+                            {durLabel}
+                          </span>
                         </div>
                       )}
                     </div>
 
-                    <div className="flex flex-col flex-1 p-5 gap-3">
+                    <div className="flex flex-col flex-1 p-5 gap-3.5">
+                      {/* Title + description */}
                       <div>
-                        <h3 className="font-semibold text-foreground text-base leading-tight mb-1 truncate">
+                        <h3 className="font-bold text-foreground text-base leading-tight mb-1.5 line-clamp-2">
                           {service.name}
                         </h3>
-                        <p className="text-muted-foreground text-sm leading-relaxed line-clamp-2 h-[2.5rem]">
+                        <p className="text-muted-foreground/80 text-sm leading-relaxed line-clamp-2">
                           {service.description ?? ''}
                         </p>
                       </div>
 
-                      <div className="flex items-center gap-2.5 bg-muted/50 rounded-xl px-3 py-2.5">
-                        <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                          <span className="text-xs font-bold text-primary">
+                      {/* Professional */}
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0 ring-2 ring-primary/15">
+                          <span className="text-[11px] font-bold text-primary">
                             {service.professional?.name
                               .split(' ')
                               .map((n) => n[0])
@@ -223,30 +261,34 @@ export default async function LandingPage({
                           </span>
                         </div>
                         <div className="min-w-0">
-                          <p className="text-xs text-muted-foreground leading-none mb-0.5">Profesional a cargo</p>
+                          <p className="text-[10px] text-muted-foreground uppercase tracking-wide leading-none mb-0.5 font-medium">Profesional</p>
                           <p className="text-sm font-semibold text-foreground truncate">
                             {service.professional?.name}
                           </p>
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-between pt-1">
-                        <span className="text-sm font-semibold text-foreground">
-                          ${Number(service.price).toLocaleString()}
-                          <span className="font-normal text-muted-foreground"> / sesión</span>
-                        </span>
+                      {/* Price + CTA */}
+                      <div className="pt-3 border-t border-border/50 mt-auto space-y-3">
+                        <div className="flex items-end justify-between">
+                          <div>
+                            <p className="text-[10px] text-muted-foreground uppercase tracking-wide font-medium mb-0.5">Precio por sesión</p>
+                            <p className="text-2xl font-bold text-foreground leading-none">
+                              ${Number(service.price).toLocaleString()}
+                            </p>
+                          </div>
+                        </div>
+                        <Link
+                          href={bookHref}
+                          className={cn(
+                            buttonVariants({ size: 'default' }),
+                            'w-full rounded-xl text-sm font-semibold gap-2'
+                          )}
+                        >
+                          <CalendarCheck className="w-4 h-4" />
+                          Reservar ahora
+                        </Link>
                       </div>
-
-                      <Link
-                        href={bookHref}
-                        className={cn(
-                          buttonVariants({ size: 'sm' }),
-                          'w-full rounded-xl text-xs font-semibold mt-1'
-                        )}
-                      >
-                        <CalendarCheck className="w-3.5 h-3.5 mr-1.5" />
-                        Reservar una cita ahora
-                      </Link>
                     </div>
                   </div>
                 );
