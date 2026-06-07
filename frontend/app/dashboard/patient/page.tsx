@@ -77,6 +77,7 @@ export default function PatientDashboard() {
   const [apptError, setApptError] = useState('');
   const [apptPage, setApptPage] = useState(0);
   const [cancellingId, setCancellingId] = useState<number | null>(null);
+  const [confirmingId, setConfirmingId] = useState<number | null>(null);
   const [deletingApptId, setDeletingApptId] = useState<number | null>(null);
 
   // Addresses
@@ -133,6 +134,18 @@ export default function PatientDashboard() {
       // silently ignore
     } finally {
       setCancellingId(null);
+    }
+  }
+
+  async function handleConfirm(appt: Appointment) {
+    setConfirmingId(appt.id);
+    try {
+      const updated = await appointmentsApi.updateStatusByCode(appt.reservationCode, appt.patientEmail, 'CONFIRMED');
+      setAppointments((prev) => prev.map((a) => (a.id === appt.id ? updated : a)));
+    } catch {
+      // silently ignore
+    } finally {
+      setConfirmingId(null);
     }
   }
 
@@ -346,14 +359,26 @@ export default function PatientDashboard() {
                         </td>
                         <td className="px-3 py-3 text-right whitespace-nowrap">
                           {appt.status === 'PENDING' || appt.status === 'CONFIRMED' ? (
-                            <button
-                              onClick={() => handleCancel(appt)}
-                              disabled={cancellingId === appt.id}
-                              className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive transition-colors disabled:opacity-40"
-                            >
-                              <Ban className="w-3.5 h-3.5" />
-                              {cancellingId === appt.id ? 'Cancelando…' : 'Cancelar'}
-                            </button>
+                            <div className="inline-flex items-center gap-3">
+                              {appt.status === 'PENDING' && (
+                                <button
+                                  onClick={() => handleConfirm(appt)}
+                                  disabled={confirmingId === appt.id}
+                                  className="inline-flex items-center gap-1 text-xs text-emerald-600 hover:text-emerald-700 transition-colors disabled:opacity-40"
+                                >
+                                  <CheckCircle2 className="w-3.5 h-3.5" />
+                                  {confirmingId === appt.id ? 'Confirmando…' : 'Confirmar'}
+                                </button>
+                              )}
+                              <button
+                                onClick={() => handleCancel(appt)}
+                                disabled={cancellingId === appt.id}
+                                className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive transition-colors disabled:opacity-40"
+                              >
+                                <Ban className="w-3.5 h-3.5" />
+                                {cancellingId === appt.id ? 'Cancelando…' : 'Cancelar'}
+                              </button>
+                            </div>
                           ) : appt.status === 'CANCELLED' ? (
                             <button
                               onClick={() => handleDeleteAppointment(appt.id)}

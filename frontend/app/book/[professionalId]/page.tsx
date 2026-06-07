@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
-import { useParams, useSearchParams } from 'next/navigation';
+import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import {
   availabilitiesApi,
   servicesApi,
@@ -16,7 +16,7 @@ import {
 import Link from 'next/link';
 import { MiniCalendar } from '@/components/ui/mini-calendar';
 import { TimeSlotPicker } from '@/components/ui/time-slot-picker';
-import { Button, buttonVariants } from '@/components/ui/button';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -27,10 +27,10 @@ import {
   ArrowLeft,
   Calendar,
   Star,
-  CheckCircle2,
   AlertCircle,
   Leaf,
   ShieldCheck,
+  CheckCircle2,
   Mail,
   User,
   FileText,
@@ -38,7 +38,7 @@ import {
   Video,
 } from 'lucide-react';
 
-type BookStatus = 'idle' | 'submitting' | 'success' | 'error';
+type BookStatus = 'idle' | 'submitting' | 'error';
 
 const CARD_COLORS = ['bg-teal-50', 'bg-amber-50', 'bg-purple-50', 'bg-blue-50', 'bg-green-50'];
 
@@ -67,6 +67,7 @@ export default function BookPage() {
   });
   const [status, setStatus] = useState<BookStatus>('idle');
   const [errorMsg, setErrorMsg] = useState('');
+  const router = useRouter();
 
   useEffect(() => {
     if (!form.preferredDate || isNaN(profId)) return;
@@ -131,18 +132,17 @@ export default function BookPage() {
     }
     setStatus('submitting');
     try {
-      await appointmentsApi.create({
+      const created = await appointmentsApi.create({
         professionalId: profId,
         patientName: form.patientName,
         patientEmail: form.patientEmail,
-        serviceId: parseInt(form.serviceId) || 0,
+        serviceId: parseInt(form.serviceId),
         date: form.preferredDate,
         time: form.preferredTime,
         locationType: form.locationType,
-        ...(form.notes ? { notes: form.notes } : {}),
         ...(form.locationType === 'HOME' && form.address ? { address: form.address } : {}),
       });
-      setStatus('success');
+      router.push(`/citas/${created.reservationCode}?email=${encodeURIComponent(form.patientEmail)}`);
     } catch (err: unknown) {
       setErrorMsg(err instanceof Error ? err.message : 'Error al enviar la solicitud');
       setStatus('error');
@@ -182,54 +182,6 @@ export default function BookPage() {
         <Link href="/" className="text-primary hover:underline text-sm">
           Volver al inicio
         </Link>
-      </div>
-    );
-  }
-
-  if (status === 'success') {
-    return (
-      <div className="max-w-md mx-auto px-4 py-20 text-center">
-        <div className="w-20 h-20 bg-emerald-50 rounded-3xl flex items-center justify-center mx-auto mb-6">
-          <CheckCircle2 className="w-9 h-9 text-emerald-600" />
-        </div>
-        <h1 className="text-2xl font-bold text-foreground mb-3">
-          ¡Solicitud enviada!
-        </h1>
-        <p className="text-muted-foreground mb-2">
-          Tu solicitud de turno fue recibida correctamente.
-        </p>
-        <p className="text-muted-foreground text-sm mb-8">
-          Recibirás una confirmación en{' '}
-          <span className="font-semibold text-foreground">{form.patientEmail}</span>{' '}
-          a la brevedad.
-        </p>
-        <div className="flex flex-col gap-3">
-          <Link
-            href="/"
-            className={cn(buttonVariants(), 'rounded-full px-8')}
-          >
-            Volver al inicio
-          </Link>
-          <button
-            onClick={() => {
-              setStatus('idle');
-              setForm({
-                patientName: '',
-                patientEmail: '',
-                serviceId: '',
-                preferredDate: '',
-                preferredTime: '',
-                locationType: 'OFFICE' as 'OFFICE' | 'HOME' | 'VIRTUAL',
-                address: '',
-                notes: '',
-              });
-              setSelectedService(null);
-            }}
-            className="text-primary text-sm hover:underline"
-          >
-            Solicitar otro turno
-          </button>
-        </div>
       </div>
     );
   }

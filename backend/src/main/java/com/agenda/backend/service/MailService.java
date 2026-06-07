@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -36,15 +37,17 @@ public class MailService {
     // PUBLIC API
     // =========================
 
-    // 🔥 QUITAMOS @Async TEMPORALMENTE PARA DEBUG REAL
+    @Async
     public void sendAppointmentConfirmationEmail(EmailAppointmentSnapshot snapshot) {
         send(snapshot, CONFIRMATION_SUBJECT, CONFIRMATION_TITLE, "confirmación");
     }
 
+    @Async
     public void sendAppointmentCancellationEmail(EmailAppointmentSnapshot snapshot) {
         send(snapshot, CANCELLATION_SUBJECT, CANCELLATION_TITLE, "cancelación");
     }
 
+    @Async
     public void sendAppointmentReminderEmail(EmailAppointmentSnapshot snapshot) {
         send(snapshot, REMINDER_SUBJECT, REMINDER_TITLE, "recordatorio");
     }

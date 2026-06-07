@@ -1,5 +1,9 @@
 import { type NextRequest } from 'next/server';
-import { API_URL } from '@/lib/api-config';
+
+// BACKEND_URL es una variable de entorno server-side (sin NEXT_PUBLIC_).
+// En local: http://localhost:8081
+// En producción (Render/Vercel): https://agenda-dirh.onrender.com
+const BACKEND = (process.env.BACKEND_URL ?? 'https://agenda-dirh.onrender.com').replace(/\/$/, '');
 
 async function proxy(
   request: NextRequest,
@@ -7,7 +11,7 @@ async function proxy(
 ): Promise<Response> {
   const pathname = slug.join('/');
   const searchParams = request.nextUrl.searchParams.toString();
-  const url = `${API_URL}/api/${pathname}${searchParams ? `?${searchParams}` : ''}`;
+  const url = `${BACKEND}/api/${pathname}${searchParams ? `?${searchParams}` : ''}`;
 
   const authHeader = request.headers.get('Authorization');
   const headers: Record<string, string> = {
