@@ -14,6 +14,7 @@ interface TimeSlotPickerProps {
   ranges: TimeRange[];
   occupiedTimes?: string[]; // 'HH:MM' slots already booked
   stepMinutes?: number;
+  serviceDurationMinutes?: number;
 }
 
 function toMinutes(t: string) {
@@ -27,12 +28,13 @@ function fromMinutes(total: number) {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 }
 
-function generateSlots(ranges: TimeRange[], step: number): string[] {
+function generateSlots(ranges: TimeRange[], step: number, serviceDuration?: number): string[] {
   const slots: string[] = [];
   for (const { startTime, endTime } of ranges) {
     const start = toMinutes(startTime);
     const end = toMinutes(endTime);
-    for (let t = start; t < end; t += step) {
+    const lastStart = serviceDuration ? Math.max(start, end - serviceDuration) : end - step;
+    for (let t = start; t <= lastStart; t += step) {
       slots.push(fromMinutes(t));
     }
   }
@@ -55,7 +57,7 @@ export function TimeSlotPicker({
     );
   }
 
-  const slots = generateSlots(ranges, stepMinutes);
+  const slots = generateSlots(ranges, stepMinutes, serviceDurationMinutes);
 
   if (slots.length === 0) {
     return (

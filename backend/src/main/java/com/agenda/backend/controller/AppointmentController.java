@@ -33,10 +33,11 @@ public class AppointmentController {
     @GetMapping("/occupied")
     public ResponseEntity<List<String>> getOccupiedTimes(
             @RequestParam Long professionalId,
-            @RequestParam String date
+            @RequestParam String date,
+            @RequestParam(required = false) Integer serviceDurationMinutes
     ) {
         List<String> times = appointmentService
-                .listOccupiedTimes(professionalId, LocalDate.parse(date))
+                .listOccupiedTimes(professionalId, LocalDate.parse(date), serviceDurationMinutes)
                 .stream()
                 .map(t -> t.toString().substring(0, 5)) // HH:MM
                 .toList();

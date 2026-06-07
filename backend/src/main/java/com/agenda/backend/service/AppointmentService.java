@@ -179,11 +179,48 @@ public class AppointmentService {
     }
 
     public java.util.List<LocalTime> listOccupiedTimes(Long professionalId, LocalDate date) {
-        return appointmentRepository
-                .findAllByProfessionalIdAndDateAndStatusNot(professionalId, date, AppointmentStatus.CANCELLED)
-                .stream()
-                .map(Appointment::getTime)
+        return listOccupiedTimes(professionalId, date, null);
+    }
+
+    public java.util.List<LocalTime> listOccupiedTimes(Long professionalId, LocalDate date, Integer serviceDurationMinutes) {
+        java.util.List<Appointment> appts = appointmentRepository
+                .findAllByProfessionalIdAndDateAndStatusNot(professionalId, date, AppointmentStatus.CANCELLED);
+
+        if (serviceDurationMinutes == null) {
+            return appts.stream().map(Appointment::getTime).toList();
+        }
+
+        int D = serviceDurationMinutes;
+        java.util.Set<Integer> blockedMinutes = new java.util.HashSet<>();
+
+        for (Appointment a : appts) {
+            LocalTime es = a.getTime();
+            int existingDuration = 30;
+            if (a.getService() != null && a.getService().getDurationMinutes() != null) {
+                existingDuration = a.getService().getDurationMinutes();
+            }
+            LocalTime ee = es.plusMinutes(existingDuration);
+
+            int esMin = es.getHour() * 60 + es.getMinute();
+            int eeMin = ee.getHour() * 60 + ee.getMinute();
+
+            int startMin = esMin - D + 1; // S must be > esMin - D, so S >= esMin - D + 1
+            int endMin = eeMin - 1; // S < eeMin
+
+            if (startMin < 0) startMin = 0;
+            if (endMin > 24 * 60 - 1) endMin = 24 * 60 - 1;
+
+            for (int m = startMin; m <= endMin; m++) {
+                blockedMinutes.add(m);
+            }
+        }
+
+        java.util.List<LocalTime> blocked = blockedMinutes.stream()
+                .sorted()
+                .map(min -> LocalTime.of(min / 60, min % 60))
                 .toList();
+
+        return blocked;
     }
 
     @Transactional

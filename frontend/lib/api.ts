@@ -230,8 +230,11 @@ export const appointmentsApi = {
       body: JSON.stringify(data),
     }),
   myAppointments: () => request<Appointment[]>('/api/appointments/me'),
-  occupiedTimes: (professionalId: number, date: string) =>
-    request<string[]>(`/api/appointments/occupied?professionalId=${professionalId}&date=${date}`),
+  occupiedTimes: (professionalId: number, date: string, serviceDurationMinutes?: number) => {
+    const params = new URLSearchParams({ professionalId: String(professionalId), date });
+    if (serviceDurationMinutes != null) params.set('serviceDurationMinutes', String(serviceDurationMinutes));
+    return request<string[]>(`/api/appointments/occupied?${params}`);
+  },
   getByCode: (code: string, email: string) =>
     request<Appointment>(`/api/appointments/by-code/${code}?email=${encodeURIComponent(email)}`),
   updateStatusByCode: (code: string, email: string, status: AppointmentStatus) =>
