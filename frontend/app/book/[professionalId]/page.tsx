@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, use } from 'react';
+import { useAuth } from '@/lib/auth-context';
 import { useSearchParams } from 'next/navigation';
 import {
   availabilitiesApi,
@@ -78,6 +79,8 @@ export default function BookPage({
       .catch(() => {});
   }, [form.preferredDate, profId]);
 
+  const { user } = useAuth();
+
   useEffect(() => {
     if (isNaN(profId)) return;
     Promise.all([availabilitiesApi.byProfessional(profId), servicesApi.byProfessional(profId)])
@@ -97,6 +100,12 @@ export default function BookPage({
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [profId]);
+
+  // Prefill patient data if user is authenticated
+  useEffect(() => {
+    if (!user) return;
+    setForm((p) => ({ ...p, patientName: user.name ?? p.patientName, patientEmail: user.email ?? p.patientEmail }));
+  }, [user]);
 
   function setField(field: string, value: string) {
     setForm((p) => ({ ...p, [field]: value }));
