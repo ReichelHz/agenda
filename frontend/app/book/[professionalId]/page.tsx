@@ -74,7 +74,7 @@ export default function BookPage({
   useEffect(() => {
     if (!form.preferredDate || isNaN(profId)) return;
     setOccupiedTimes([]);
-    appointmentsApi.occupiedTimes(profId, form.preferredDate, selectedService?.durationMinutes)
+    appointmentsApi.occupiedTimes(profId, form.preferredDate)
       .then(setOccupiedTimes)
       .catch(() => {});
   }, [form.preferredDate, profId]);
@@ -354,8 +354,7 @@ export default function BookPage({
                     value={form.preferredTime}
                     onChange={(time) => setField('preferredTime', time)}
                     ranges={selectedDayRanges}
-                      occupiedTimes={occupiedTimes}
-                      serviceDurationMinutes={selectedService?.durationMinutes}
+                    occupiedTimes={occupiedTimes}
                   />
                   {form.preferredDate && !form.preferredTime && (
                     <p className="text-xs text-destructive">Selecciona un horario</p>
