@@ -1,13 +1,13 @@
 server:
-  port: 8081
+  port: ${PORT:8081}
 
 spring:
   application:
     name: backend
   datasource:
-    url: jdbc:postgresql://aws-1-us-east-2.pooler.supabase.com:6543/postgres?prepareThreshold=0
-    username: postgres.oudlnfeonpvdadsdkwwh
-    password: ph8dQA2JrW39bmIz
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
@@ -18,7 +18,7 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
   mail:
     host: smtp.gmail.com
-    port: 587
+    port: ${MAIL_PORT:587}
     username: ${MAIL_USERNAME}
     password: ${MAIL_PASSWORD}
     properties:
@@ -30,7 +30,7 @@ spring:
 
 app:
   jwt:
-    secret: ${JWT_SECRET:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef}
+    secret: ${JWT_SECRET}
     expiration-ms: 86400000
   mail:
     from: ${APP_MAIL_FROM:${MAIL_USERNAME:no-reply@agenda.local}}
