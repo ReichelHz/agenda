@@ -19,6 +19,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.Period;
 import java.util.List;
 import java.util.Optional;
 
@@ -50,12 +52,24 @@ public class UserService implements UserDetailsService {
             throw new EmailAlreadyInUseException();
         }
 
+        Role role = request.getRole() == null ? Role.PATIENT : request.getRole();
+
+        // Validación: si es paciente, debe proveer fecha de nacimiento y ser mayor de 18
+        if (role == Role.PATIENT) {
+            LocalDate bd = request.getBirthDate();
+            if (bd == null) {
+                throw new IllegalArgumentException("La fecha de nacimiento es obligatoria para pacientes");
+            }
+            int age = Period.between(bd, LocalDate.now()).getYears();
+            if (age < 18) {
+                throw new IllegalArgumentException("Debes tener 18 años o más para registrarte");
+            }
+        }
+
         User user = new User();
         user.setName(request.getName().trim());
         user.setEmail(normalizedEmail);
         user.setPassword(passwordEncoder.encode(request.getPassword()));
-        
-        Role role = request.getRole() == null ? Role.PATIENT : request.getRole();
         user.setRole(role);
 
         User savedUser = userRepository.save(user);

@@ -46,6 +46,30 @@ function RegisterForm() {
   async function handleSubmit(e: React.ChangeEvent<HTMLFormElement>) {
     e.preventDefault();
     setError('');
+
+    // Validación: se requiere fecha de nacimiento y edad >= 18
+    if (!form.birthDate) {
+      setError('Debes indicar tu fecha de nacimiento y tener 18 años o más');
+      return;
+    }
+
+    const birth = new Date(form.birthDate + 'T00:00:00');
+    if (isNaN(birth.getTime())) {
+      setError('Fecha de nacimiento inválida');
+      return;
+    }
+
+    const today = new Date();
+    let age = today.getFullYear() - birth.getFullYear();
+    const m = today.getMonth() - birth.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
+    if (age < 18) {
+      setError('Debes tener 18 años o más para registrarte');
+      return;
+    }
+
     setLoading(true);
     try {
       await authApi.register({
