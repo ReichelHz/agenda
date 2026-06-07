@@ -170,6 +170,18 @@ public class AppointmentService {
         appointmentRepository.deleteById(id);
     }
 
+    @Transactional
+    public void deleteByProfessional(Long id, Long professionalId) {
+        Appointment appointment = appointmentRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Cita no encontrada"));
+
+        if (appointment.getProfessional() == null || !appointment.getProfessional().getId().equals(professionalId)) {
+            throw new IllegalArgumentException("No tienes permiso para eliminar esta cita");
+        }
+
+        appointmentRepository.deleteById(id);
+    }
+
     public java.util.List<Appointment> listByPatientId(Long patientId) {
         return appointmentRepository.findAllByPatientId(patientId);
     }

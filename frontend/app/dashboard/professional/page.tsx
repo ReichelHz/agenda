@@ -6,11 +6,14 @@ import {
   availabilitiesApi,
   servicesApi,
   professionalApi,
+  appointmentsApi,
   usersApi,
   type Availability,
   type Service,
   type ServiceModality,
   type ProfessionalProfile,
+  type Appointment,
+  type AppointmentStatus,
   type DayOfWeek,
   DAY_LABELS,
   DAYS_ORDER,
@@ -27,6 +30,8 @@ import {
   TabsContent,
 } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { cn } from '@/lib/utils';
 import {
   Calendar,
   Plus,
@@ -43,6 +48,11 @@ import {
   Pencil,
   X,
   Save,
+  CalendarCheck,
+  Ban,
+  Mail,
+  MapPin,
+  Video,
 } from 'lucide-react';
 
 export default function ProfessionalDashboard() {
@@ -52,9 +62,19 @@ export default function ProfessionalDashboard() {
   const [availabilities, setAvailabilities] = useState<Availability[]>([]);
   const [avLoading, setAvLoading] = useState(true);
 
+  // Appointments state
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [apptLoading, setApptLoading] = useState(true);
+  const [confirmingId, setConfirmingId] = useState<number | null>(null);
+  const [cancellingId, setCancellingId] = useState<number | null>(null);
+  const [apptToDelete, setApptToDelete] = useState<Appointment | null>(null);
+  const [deletingAppt, setDeletingAppt] = useState(false);
+
   // Services state
   const [services, setServices] = useState<Service[]>([]);
   const [svLoading, setSvLoading] = useState(true);
+  const [serviceToDelete, setServiceToDelete] = useState<Service | null>(null);
+  const [deletingService, setDeletingService] = useState(false);
   const [svForm, setSvForm] = useState({ name: '', description: '', price: '', duration: '', modality: 'PRESENCIAL' as ServiceModality });
   const [svDurationMode, setSvDurationMode] = useState<'preset' | 'custom'>('preset');
   const [svSaving, setSvSaving] = useState(false);
@@ -115,6 +135,15 @@ export default function ProfessionalDashboard() {
       .then(setServices)
       .catch(() => setServices([]))
       .finally(() => setSvLoading(false));
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    appointmentsApi
+      .professionalAppointments()
+      .then((data) => setAppointments(Array.isArray(data) ? data : []))
+      .catch(() => setAppointments([]))
+      .finally(() => setApptLoading(false));
   }, [user]);
 
   useEffect(() => {
@@ -223,13 +252,56 @@ export default function ProfessionalDashboard() {
     }
   }
 
-  async function handleDeleteService(id: number) {
+  async function handleDeleteService() {
+    if (!serviceToDelete) return;
+    setDeletingService(true);
     try {
-      await servicesApi.delete(id);
-      setServices((prev) => prev.filter((s) => s.id !== id));
+      await servicesApi.delete(serviceToDelete.id);
+      setServices((prev) => prev.filter((s) => s.id !== serviceToDelete.id));
+      setServiceToDelete(null);
     } catch {
       setSvError('No se pudo eliminar el servicio');
       setTimeout(() => setSvError(''), 4000);
+    } finally {
+      setDeletingService(false);
+    }
+  }
+
+  async function handleConfirmAppt(appt: Appointment) {
+    setConfirmingId(appt.id);
+    try {
+      const updated = await appointmentsApi.updateStatusAdmin(appt.id, 'CONFIRMED');
+      setAppointments((prev) => prev.map((a) => (a.id === appt.id ? updated : a)));
+    } catch {
+      // silently ignore
+    } finally {
+      setConfirmingId(null);
+    }
+  }
+
+  async function handleCancelAppt(appt: Appointment) {
+    setCancellingId(appt.id);
+    try {
+      const updated = await appointmentsApi.updateStatusAdmin(appt.id, 'CANCELLED');
+      setAppointments((prev) => prev.map((a) => (a.id === appt.id ? updated : a)));
+    } catch {
+      // silently ignore
+    } finally {
+      setCancellingId(null);
+    }
+  }
+
+  async function handleDeleteAppt() {
+    if (!apptToDelete) return;
+    setDeletingAppt(true);
+    try {
+      await appointmentsApi.deleteByProfessional(apptToDelete.id);
+      setAppointments((prev) => prev.filter((a) => a.id !== apptToDelete.id));
+      setApptToDelete(null);
+    } catch {
+      // silently ignore
+    } finally {
+      setDeletingAppt(false);
     }
   }
 
@@ -330,6 +402,27 @@ export default function ProfessionalDashboard() {
     return 'Ambas';
   }
 
+  function formatApptDate(dateStr: string) {
+    const [year, month, day] = dateStr.split('-');
+    return `${day}/${month}/${year}`;
+  }
+
+  const STATUS_CONFIG: Record<AppointmentStatus, { label: string; className: string }> = {
+    PENDING: { label: 'Pendiente', className: 'border-amber-300 text-amber-700 bg-amber-50' },
+    CONFIRMED: { label: 'Confirmada', className: 'border-emerald-300 text-emerald-700 bg-emerald-50' },
+    CANCELLED: { label: 'Cancelada', className: 'border-red-200 text-red-600 bg-red-50' },
+  };
+
+  const LOCATION_CONFIG: Record<string, { label: string; Icon: typeof MapPin }> = {
+    OFFICE: { label: 'Consultorio', Icon: MapPin },
+    HOME: { label: 'Domicilio', Icon: MapPin },
+    VIRTUAL: { label: 'Virtual', Icon: Video },
+  };
+
+  const pendingAppts = appointments.filter((a) => a.status === 'PENDING').length;
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const todayAppts = appointments.filter((a) => a.date === todayStr && a.status !== 'CANCELLED').length;
+
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10">
       {/* Header */}
@@ -365,9 +458,9 @@ export default function ProfessionalDashboard() {
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4 mb-8">
         {[
-          { label: 'Días disponibles', value: activeDays.length, icon: <Calendar className="w-4 h-4" /> },
+          { label: 'Citas pendientes', value: apptLoading ? '–' : pendingAppts, icon: <CalendarCheck className="w-4 h-4" /> },
           { label: 'Servicios', value: services.length, icon: <Scissors className="w-4 h-4" /> },
-          { label: 'Reservas hoy', value: 0, icon: <Clock className="w-4 h-4" /> },
+          { label: 'Reservas hoy', value: apptLoading ? '–' : todayAppts, icon: <Clock className="w-4 h-4" /> },
         ].map((s) => (
           <div
             key={s.label}
@@ -385,8 +478,17 @@ export default function ProfessionalDashboard() {
       </div>
 
       {/* Tabs */}
-      <Tabs defaultValue="services">
+      <Tabs defaultValue="appointments">
         <TabsList variant="line" className="mb-6 w-full border-b border-border rounded-none pb-0">
+          <TabsTrigger value="appointments" className="gap-2 pb-3">
+            <CalendarCheck className="w-4 h-4" />
+            Citas
+            {pendingAppts > 0 && (
+              <span className="ml-0.5 text-[10px] font-semibold bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full">
+                {pendingAppts}
+              </span>
+            )}
+          </TabsTrigger>
           <TabsTrigger value="services" className="gap-2 pb-3">
             <Scissors className="w-4 h-4" />
             Servicios
@@ -396,6 +498,132 @@ export default function ProfessionalDashboard() {
             Mi Perfil
           </TabsTrigger>
         </TabsList>
+
+        {/* ── Appointments manager ── */}
+        <TabsContent value="appointments">
+          <div className="bg-white rounded-2xl border border-border p-6">
+            <h2 className="font-semibold text-foreground mb-5 flex items-center gap-2">
+              <CalendarCheck className="w-4 h-4 text-primary" />
+              Administrador de citas
+              {appointments.length > 0 && (
+                <span className="ml-auto text-xs font-semibold bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                  {appointments.length}
+                </span>
+              )}
+            </h2>
+
+            {apptLoading ? (
+              <div className="space-y-2">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="h-16 bg-muted animate-pulse rounded-xl" />
+                ))}
+              </div>
+            ) : appointments.length === 0 ? (
+              <div className="text-center py-14 border-2 border-dashed border-border rounded-2xl">
+                <div className="w-16 h-16 bg-muted rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <CalendarCheck className="w-7 h-7 text-muted-foreground" />
+                </div>
+                <h3 className="font-semibold text-foreground mb-2">No tienes citas todavía</h3>
+                <p className="text-muted-foreground text-sm max-w-xs mx-auto">
+                  Cuando un paciente reserve un turno contigo, aparecerá aquí.
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto -mx-1">
+                <table className="w-full min-w-160 text-sm">
+                  <thead>
+                    <tr className="border-b border-border">
+                      <th className="text-left font-medium text-muted-foreground px-3 py-2.5">Paciente</th>
+                      <th className="text-left font-medium text-muted-foreground px-3 py-2.5 whitespace-nowrap">Servicio</th>
+                      <th className="text-left font-medium text-muted-foreground px-3 py-2.5 whitespace-nowrap">Fecha</th>
+                      <th className="text-left font-medium text-muted-foreground px-3 py-2.5 whitespace-nowrap">Hora</th>
+                      <th className="text-left font-medium text-muted-foreground px-3 py-2.5 whitespace-nowrap">Estado</th>
+                      <th className="text-right font-medium text-muted-foreground px-3 py-2.5">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {appointments.map((appt) => {
+                      const cfg = STATUS_CONFIG[appt.status];
+                      const loc = appt.locationType ? LOCATION_CONFIG[appt.locationType] : null;
+                      return (
+                        <tr key={appt.id} className="hover:bg-muted/30 transition-colors align-top">
+                          <td className="px-3 py-3">
+                            <div className="flex items-center gap-2.5">
+                              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0 ring-2 ring-primary/15">
+                                <span className="text-[11px] font-bold text-primary">
+                                  {appt.patientName
+                                    ?.split(' ')
+                                    .map((n) => n[0])
+                                    .slice(0, 2)
+                                    .join('')
+                                    .toUpperCase()}
+                                </span>
+                              </div>
+                              <div className="min-w-0">
+                                <p className="font-medium text-foreground truncate">{appt.patientName}</p>
+                                <p className="text-xs text-muted-foreground flex items-center gap-1 truncate">
+                                  <Mail className="w-3 h-3 shrink-0" />
+                                  {appt.patientEmail}
+                                </p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-3 py-3 text-foreground whitespace-nowrap">
+                            {appt.serviceName}
+                            {loc && (
+                              <span className="flex items-center gap-1 text-[11px] text-muted-foreground mt-0.5">
+                                <loc.Icon className="w-3 h-3" />
+                                {loc.label}
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-3 py-3 text-foreground whitespace-nowrap">{formatApptDate(appt.date)}</td>
+                          <td className="px-3 py-3 text-foreground whitespace-nowrap">{appt.time.slice(0, 5)}</td>
+                          <td className="px-3 py-3 whitespace-nowrap">
+                            <Badge variant="outline" className={cn('text-xs font-medium', cfg.className)}>
+                              {cfg.label}
+                            </Badge>
+                          </td>
+                          <td className="px-3 py-3 whitespace-nowrap">
+                            <div className="flex items-center justify-end gap-3">
+                              {appt.status === 'PENDING' && (
+                                <button
+                                  onClick={() => handleConfirmAppt(appt)}
+                                  disabled={confirmingId === appt.id}
+                                  className="inline-flex items-center gap-1 text-xs text-emerald-600 hover:text-emerald-700 transition-colors disabled:opacity-40"
+                                >
+                                  <CheckCircle2 className="w-3.5 h-3.5" />
+                                  {confirmingId === appt.id ? 'Confirmando…' : 'Confirmar'}
+                                </button>
+                              )}
+                              {(appt.status === 'PENDING' || appt.status === 'CONFIRMED') && (
+                                <button
+                                  onClick={() => handleCancelAppt(appt)}
+                                  disabled={cancellingId === appt.id}
+                                  className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-amber-600 transition-colors disabled:opacity-40"
+                                >
+                                  <Ban className="w-3.5 h-3.5" />
+                                  {cancellingId === appt.id ? 'Cancelando…' : 'Cancelar'}
+                                </button>
+                              )}
+                              <button
+                                onClick={() => setApptToDelete(appt)}
+                                className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive transition-colors"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                                Eliminar
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </TabsContent>
 
         {/* ── Services ── */}
         <TabsContent value="services">
@@ -838,7 +1066,7 @@ export default function ProfessionalDashboard() {
                                 </button>
                                 <button
                                   type="button"
-                                  onClick={() => handleDeleteService(sv.id)}
+                                  onClick={() => setServiceToDelete(sv)}
                                   className="w-8 h-8 rounded-xl flex items-center justify-center text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 transition-colors"
                                   title="Eliminar servicio"
                                 >
@@ -1130,6 +1358,41 @@ export default function ProfessionalDashboard() {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Confirm: delete appointment */}
+      <ConfirmDialog
+        open={apptToDelete !== null}
+        onOpenChange={(o) => !o && setApptToDelete(null)}
+        title="¿Eliminar esta cita?"
+        description={
+          apptToDelete ? (
+            <>
+              Se eliminará permanentemente la cita de{' '}
+              <strong className="text-foreground">{apptToDelete.patientName}</strong> del{' '}
+              {formatApptDate(apptToDelete.date)} a las {apptToDelete.time.slice(0, 5)}. Esta acción no se puede deshacer.
+            </>
+          ) : null
+        }
+        loading={deletingAppt}
+        onConfirm={handleDeleteAppt}
+      />
+
+      {/* Confirm: delete service */}
+      <ConfirmDialog
+        open={serviceToDelete !== null}
+        onOpenChange={(o) => !o && setServiceToDelete(null)}
+        title="¿Eliminar este servicio?"
+        description={
+          serviceToDelete ? (
+            <>
+              Se eliminará el servicio{' '}
+              <strong className="text-foreground">{serviceToDelete.name}</strong>. Esta acción no se puede deshacer.
+            </>
+          ) : null
+        }
+        loading={deletingService}
+        onConfirm={handleDeleteService}
+      />
     </div>
   );
 }

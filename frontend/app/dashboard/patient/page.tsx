@@ -35,6 +35,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 const PAGE_SIZE = 5;
 
@@ -79,6 +80,7 @@ export default function PatientDashboard() {
   const [cancellingId, setCancellingId] = useState<number | null>(null);
   const [confirmingId, setConfirmingId] = useState<number | null>(null);
   const [deletingApptId, setDeletingApptId] = useState<number | null>(null);
+  const [apptToDelete, setApptToDelete] = useState<Appointment | null>(null);
 
   // Addresses
   const [addresses, setAddresses] = useState<PatientAddress[]>([]);
@@ -149,7 +151,9 @@ export default function PatientDashboard() {
     }
   }
 
-  async function handleDeleteAppointment(id: number) {
+  async function handleDeleteAppointment() {
+    if (!apptToDelete) return;
+    const id = apptToDelete.id;
     setDeletingApptId(id);
     try {
       await appointmentsApi.delete(id);
@@ -160,6 +164,7 @@ export default function PatientDashboard() {
         const maxPage = Math.max(0, Math.ceil(remaining / PAGE_SIZE) - 1);
         return Math.min(p, maxPage);
       });
+      setApptToDelete(null);
     } catch {
       // silently ignore
     } finally {
@@ -381,7 +386,7 @@ export default function PatientDashboard() {
                             </div>
                           ) : appt.status === 'CANCELLED' ? (
                             <button
-                              onClick={() => handleDeleteAppointment(appt.id)}
+                              onClick={() => setApptToDelete(appt)}
                               disabled={deletingApptId === appt.id}
                               className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive transition-colors disabled:opacity-40"
                             >
@@ -611,6 +616,24 @@ export default function PatientDashboard() {
         </div>
         <Badge variant="secondary" className="shrink-0 text-xs">Tip</Badge>
       </div>
+
+      {/* Confirm: delete appointment */}
+      <ConfirmDialog
+        open={apptToDelete !== null}
+        onOpenChange={(o) => !o && setApptToDelete(null)}
+        title="¿Eliminar esta cita?"
+        description={
+          apptToDelete ? (
+            <>
+              Se eliminará la cita del{' '}
+              <strong className="text-foreground">{formatDate(apptToDelete.date)}</strong> a las{' '}
+              {formatTime(apptToDelete.time)}. Esta acción no se puede deshacer.
+            </>
+          ) : null
+        }
+        loading={deletingApptId !== null}
+        onConfirm={handleDeleteAppointment}
+      />
     </div>
   );
 }

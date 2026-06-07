@@ -247,6 +247,14 @@ export const appointmentsApi = {
       body: JSON.stringify(data),
     }),
   myAppointments: () => request<Appointment[]>('/api/appointments/me'),
+  professionalAppointments: () =>
+    request<Appointment[]>('/api/appointments/professional'),
+  updateStatusAdmin: (id: number, status: AppointmentStatus) =>
+    request<Appointment>(`/api/appointments/${id}/status-admin?status=${status}`, {
+      method: 'PATCH',
+    }),
+  deleteByProfessional: (id: number) =>
+    request<void>(`/api/appointments/${id}/professional`, { method: 'DELETE' }),
   occupiedTimes: (professionalId: number, date: string) => {
     const params = new URLSearchParams({ professionalId: String(professionalId), date });
     return request<string[]>(`/api/appointments/occupied?${params}`);

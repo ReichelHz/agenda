@@ -119,6 +119,18 @@ public class AppointmentController {
         return ResponseEntity.noContent().build();
     }
 
+    @DeleteMapping("/{id}/professional")
+    public ResponseEntity<Void> deleteAsProfessional(
+            @PathVariable Long id,
+            Authentication authentication
+    ) {
+        User user = userService.getByEmail(authentication.getName())
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        appointmentService.deleteByProfessional(id, user.getId());
+        return ResponseEntity.noContent().build();
+    }
+
     @PatchMapping("/{id}/status-admin")
     public ResponseEntity<AppointmentResponse> updateStatusAdmin(
             @PathVariable Long id,
