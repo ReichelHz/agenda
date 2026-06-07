@@ -17,6 +17,7 @@ export function clearToken(): void {
   localStorage.removeItem(TOKEN_KEY);
 }
 
+// 🛠️ FUNCIÓN DE PETICIONES CONFIGURADA CON LOGS AUTOMÁTICOS
 async function request<T>(
   path: string,
   options: RequestInit = {}
@@ -27,6 +28,13 @@ async function request<T>(
     ...(options.headers as Record<string, string> ?? {}),
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
+
+  // 🔍 LOG ANTES DE ENVIAR: Rastrea qué datos intentas mandar al presionar el botón
+  if (options.body) {
+    console.log(`📡 [API Request] Enviando datos a ${path}:`, JSON.parse(options.body as string));
+  } else {
+    console.log(`📡 [API Request] Solicitando datos a ${path}`);
+  }
 
   const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
 
@@ -41,6 +49,7 @@ async function request<T>(
     return text as unknown as R;
   };
 
+  // ⚠️ MANEJO Y CAPTURA AUTOMÁTICA DE ERRORES
   if (!res.ok) {
     let message = rawText || `HTTP ${res.status}`;
 
@@ -53,10 +62,18 @@ async function request<T>(
       }
     }
 
+    // 🚨 LOG DE ERROR CRÍTICO: Se disparará automáticamente en tu consola de Chrome si el botón falla
+    console.error(`❌ [API Error] Falló la petición a ${path}. Estado: ${res.status}. Motivo:`, message);
+
     throw new Error(message);
   }
 
-  return parseBody<T>(rawText) as T;
+  const parsedData = parseBody<T>(rawText) as T;
+  
+  // 🎉 LOG DE ÉXITO
+  console.log(`✅ [API Success] Respuesta exitosa de ${path}:`, parsedData);
+
+  return parsedData;
 }
 
 // Auth

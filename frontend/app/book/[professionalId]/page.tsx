@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState, use } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
-import { useSearchParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import {
   availabilitiesApi,
   servicesApi,
@@ -42,13 +42,10 @@ type BookStatus = 'idle' | 'submitting' | 'success' | 'error';
 
 const CARD_COLORS = ['bg-teal-50', 'bg-amber-50', 'bg-purple-50', 'bg-blue-50', 'bg-green-50'];
 
-export default function BookPage({
-  params,
-}: {
-  params: Promise<{ professionalId: string }>;
-}) {
-  const { professionalId } = use(params);
-  const profId = parseInt(professionalId, 10);
+export default function BookPage() {
+  const routeParams = useParams<{ professionalId: string }>();
+  const professionalId = routeParams?.professionalId;
+  const profId = parseInt(professionalId ?? '', 10);
   const searchParams = useSearchParams();
   const preselectedServiceId = searchParams.get('serviceId');
 
