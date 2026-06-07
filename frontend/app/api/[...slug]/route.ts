@@ -1,6 +1,5 @@
 import { type NextRequest } from 'next/server';
-
-const BACKEND_URL = process.env.BACKEND_URL ?? 'http://localhost:8081';
+import { API_URL } from '@/lib/api-config';
 
 async function proxy(
   request: NextRequest,
@@ -8,7 +7,7 @@ async function proxy(
 ): Promise<Response> {
   const pathname = slug.join('/');
   const searchParams = request.nextUrl.searchParams.toString();
-  const url = `${BACKEND_URL}/api/${pathname}${searchParams ? `?${searchParams}` : ''}`;
+  const url = `${API_URL}/api/${pathname}${searchParams ? `?${searchParams}` : ''}`;
 
   const authHeader = request.headers.get('Authorization');
   const headers: Record<string, string> = {

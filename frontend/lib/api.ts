@@ -1,7 +1,6 @@
-const API_BASE =
-  typeof window === 'undefined'
-    ? (process.env.BACKEND_URL ?? 'http://localhost:8081')
-    : '';
+import { API_URL } from './api-config';
+
+const API_BASE = API_URL;
 
 const TOKEN_KEY = 'auth_token';
 
@@ -31,22 +30,33 @@ async function request<T>(
 
   const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
 
+  const contentType = res.headers.get('Content-Type') ?? '';
+  const rawText = await res.text();
+
+  const parseBody = <R>(text: string): R | null => {
+    if (!text) return null;
+    if (contentType.includes('application/json')) {
+      return JSON.parse(text) as R;
+    }
+    return text as unknown as R;
+  };
+
   if (!res.ok) {
-  const text = await res.text();
-  let message = text;
+    let message = rawText || `HTTP ${res.status}`;
 
-  try {
-    const json = JSON.parse(text);
-    message = json.error || text;
-  } catch {
-    // no era JSON válido, usamos text directamente
+    if (contentType.includes('application/json') && rawText) {
+      try {
+        const json = JSON.parse(rawText) as { error?: string; message?: string };
+        message = json.error || json.message || rawText;
+      } catch {
+        message = rawText;
+      }
+    }
+
+    throw new Error(message);
   }
 
-  throw new Error(message);
-  }
-
-  const text = await res.text();
-  return (text ? JSON.parse(text) : null) as T;
+  return parseBody<T>(rawText) as T;
 }
 
 // Auth
@@ -70,8 +80,7 @@ export const authApi = {
       { method: 'POST', body: JSON.stringify(data) }
     ),
 
-  logout: () =>
-    request<{ ok: boolean }>('/api/auth/logout', { method: 'POST' }),
+  logout: async () => ({ ok: true }),
 };
 
 // Users

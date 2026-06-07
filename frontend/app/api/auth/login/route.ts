@@ -1,9 +1,9 @@
-const BACKEND_URL = process.env.BACKEND_URL ?? 'http://localhost:8081';
+import { API_URL } from '@/lib/api-config';
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const backendRes = await fetch(`${BACKEND_URL}/api/auth/login`, {
+    const backendRes = await fetch(`${API_URL}/api/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
