@@ -58,6 +58,15 @@ function formatDate(dateStr: string) {
   return d.toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 }
 
+// Un spinner simple reutilizable para consistencia visual
+function LoadingSpinner() {
+  return (
+    <div className="flex items-center justify-center min-h-[40vh]">
+      <Loader2 className="w-6 h-6 text-primary animate-spin" />
+    </div>
+  );
+}
+
 function CitaContent({ code }: { code: string }) {
   const searchParams = useSearchParams();
   const emailParam = searchParams.get('email') ?? '';
@@ -72,15 +81,28 @@ function CitaContent({ code }: { code: string }) {
 
   useEffect(() => {
     if (!submittedEmail) return;
+    
+    let isMounted = true;
     setLoading(true);
     setLoadError('');
+
     appointmentsApi
       .getByCode(code, submittedEmail)
-      .then(setAppointment)
-      .catch((err: unknown) =>
-        setLoadError(err instanceof Error ? err.message : 'No se encontró la cita')
-      )
-      .finally(() => setLoading(false));
+      .then((data) => {
+        if (isMounted) setAppointment(data);
+      })
+      .catch((err: unknown) => {
+        if (isMounted) {
+          setLoadError(err instanceof Error ? err.message : 'No se encontró la cita');
+        }
+      })
+      .finally(() => {
+        if (isMounted) setLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, [code, submittedEmail]);
 
   async function handleAction(status: AppointmentStatus) {
@@ -97,7 +119,7 @@ function CitaContent({ code }: { code: string }) {
     }
   }
 
-  /* ── Email gate ── */
+  /* ── Gate de Email (Autenticación básica) ── */
   if (!submittedEmail) {
     return (
       <div className="max-w-md mx-auto px-4 py-16">
@@ -142,16 +164,12 @@ function CitaContent({ code }: { code: string }) {
     );
   }
 
-  /* ── Loading ── */
+  /* ── Estado de Carga de API ── */
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[40vh]">
-        <Loader2 className="w-6 h-6 text-primary animate-spin" />
-      </div>
-    );
+    return <LoadingSpinner />;
   }
 
-  /* ── Error ── */
+  /* ── Estado de Error / No Encontrado ── */
   if (loadError || !appointment) {
     return (
       <div className="max-w-md mx-auto px-4 py-20 text-center">
@@ -162,7 +180,11 @@ function CitaContent({ code }: { code: string }) {
         <p className="text-muted-foreground text-sm mb-6">
           {loadError || 'El código o email no coinciden con ninguna reserva.'}
         </p>
-        <Button variant="outline" onClick={() => { setSubmittedEmail(''); setEmailInput(''); }} className="rounded-xl">
+        <Button 
+          variant="outline" 
+          onClick={() => { setSubmittedEmail(''); setEmailInput(''); }} 
+          className="rounded-xl"
+        >
           Intentar de nuevo
         </Button>
       </div>
@@ -174,7 +196,6 @@ function CitaContent({ code }: { code: string }) {
 
   return (
     <div className="max-w-lg mx-auto px-4 py-10">
-      {/* Back */}
       <Link
         href="/"
         className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6"
@@ -184,7 +205,7 @@ function CitaContent({ code }: { code: string }) {
       </Link>
 
       <div className="space-y-4">
-        {/* Status card */}
+        {/* Tarjeta de Información Principal */}
         <div className="bg-white rounded-2xl border border-border p-6">
           <div className="flex items-start justify-between gap-4 mb-5">
             <div>
@@ -203,7 +224,6 @@ function CitaContent({ code }: { code: string }) {
             </Badge>
           </div>
 
-          {/* Details */}
           <div className="space-y-3">
             <div className="flex items-center gap-3 text-sm">
               <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
@@ -273,7 +293,7 @@ function CitaContent({ code }: { code: string }) {
           </div>
         </div>
 
-        {/* Actions */}
+        {/* Acciones según el estado de la cita */}
         {appointment.status === 'PENDING' && (
           <div className="bg-white rounded-2xl border border-border p-6">
             <p className="text-sm text-muted-foreground mb-4">
@@ -293,11 +313,7 @@ function CitaContent({ code }: { code: string }) {
                 disabled={actionLoading}
                 className="flex-1 h-11 rounded-xl gap-2"
               >
-                {actionLoading ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <CheckCircle2 className="w-4 h-4" />
-                )}
+                {actionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
                 Confirmar asistencia
               </Button>
               <Button
@@ -306,11 +322,7 @@ function CitaContent({ code }: { code: string }) {
                 disabled={actionLoading}
                 className="flex-1 h-11 rounded-xl gap-2 text-destructive border-destructive/30 hover:bg-destructive/5 hover:text-destructive"
               >
-                {actionLoading ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <XCircle className="w-4 h-4" />
-                )}
+                {actionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}
                 Cancelar cita
               </Button>
             </div>
@@ -366,14 +378,16 @@ function CitaContent({ code }: { code: string }) {
   );
 }
 
+// El wrapper principal que consume e inyecta la Promise desenvuelta de los params.
 export default function CitaPage({
   params,
 }: {
   params: Promise<{ code: string }>;
 }) {
   const { code } = use(params);
+  
   return (
-    <Suspense>
+    <Suspense fallback={<LoadingSpinner />}>
       <CitaContent code={code} />
     </Suspense>
   );
