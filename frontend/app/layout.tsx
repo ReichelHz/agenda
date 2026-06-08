@@ -8,7 +8,7 @@ import { Leaf } from 'lucide-react';
 const GeistSans = Geist({ subsets: ['latin'], variable: '--font-sans' });
 
 export const metadata: Metadata = {
-  title: 'Stefani Leiva — Terapias Alternativas',
+  title: 'Stefani Leiva — Terapias Complementarias',
   description:
     'Conectamos pacientes con profesionales de acupuntura, ventosas, auriculoterapia y más.',
 };
@@ -32,7 +32,7 @@ export default function RootLayout({
                     Stefani Leiva
                   </h3>
                   <p className="text-sm text-muted-foreground leading-relaxed">
-                    Conectamos pacientes con profesionales de terapias alternativas para un bienestar integral.
+                    Conectamos pacientes con profesionales de terapias complementarias para un bienestar integral.
                   </p>
                 </div>
                 <div>

@@ -58,7 +58,7 @@ export default function Navbar() {
               Stefani <span className="text-primary">Leiva</span>
             </span>
             <small className="text-xs text-muted-foreground font-normal">
-              Terapias Alternativas
+              Terapias Complementarias
             </small>
           </div>
         </Link>
