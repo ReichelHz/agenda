@@ -1,6 +1,8 @@
 🌿 Agenda de Terapias Alternativas - Backend
 Sistema profesional de gestión de citas y perfiles públicos para terapeutas, diseñado para centralizar la reserva de servicios de bienestar. Desarrollado con una arquitectura moderna en Java 21 y Spring Boot 3.
 
+🌐 **Despliegue en producción:** [https://agenda-frontend-tjmm.onrender.com/](https://agenda-frontend-tjmm.onrender.com/)
+
 🚀 Arquitectura y Tecnologías
 Java 21 (LTS): Aprovechando las últimas mejoras de rendimiento.
 
@@ -117,7 +119,7 @@ Bash
 - [x] **Notificaciones**: integración de servicio para alertas por email.
 - [x] **Documentación**: integración de Swagger/OpenAPI.
 - [x] **Pruebas Unitarias**: Amplia cobertura de tests unitarios de servicios (`UserService` y `AppointmentService`).
-- [ ] **Despliegue**: dockerización y setup de CI/CD para producción.
+- [x] **Despliegue**: dockerización y setup de CI/CD para producción (Desplegado en Render).
 ### 🚀 Próximos Pasos (V2)
 - [ ] **Excepciones de Agenda**: Bloqueo de fechas específicas y horarios "one-off" no recurrentes.
 - [ ] **Configuración por Servicio**: Opción de marcar servicios como "Solo Oficina" (aunque el profesional haga domicilios globalmente).
