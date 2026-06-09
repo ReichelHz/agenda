@@ -116,12 +116,13 @@ Bash
 - [x] **Módulo de Reservas**: proceso de agendamiento (`Appointment`) y validación de horarios.
 - [x] **Notificaciones**: integración de servicio para alertas por email.
 - [x] **Documentación**: integración de Swagger/OpenAPI.
+- [x] **Pruebas Unitarias**: Amplia cobertura de tests unitarios de servicios (`UserService` y `AppointmentService`).
 - [ ] **Despliegue**: dockerización y setup de CI/CD para producción.
 ### 🚀 Próximos Pasos (V2)
 - [ ] **Excepciones de Agenda**: Bloqueo de fechas específicas y horarios "one-off" no recurrentes.
 - [ ] **Configuración por Servicio**: Opción de marcar servicios como "Solo Oficina" (aunque el profesional haga domicilios globalmente).
 - [ ] **Lógica de Persistencia en Domicilios**: Asegurar que al reactivar la opción global de domicilios, se respeten los servicios que fueron marcados manualmente como "No" (Evitar activaciones accidentales).
-- [ ] **Recordatorios automáticos 24h antes de la cita**: Envío de emails o notificaciones programadas antes de la fecha de la cita.
+- [x] **Recordatorios automáticos 24h antes de la cita**: Envío de emails o notificaciones programadas antes de la fecha de la cita.
 
 ---
 
@@ -154,6 +155,16 @@ Bash
 | **POST** | `/api/availabilities` | Crear Horario | **SÍ** | `{"professional":{"id":1}, "dayOfWeek":"MONDAY", "startTime":"HH:mm:ss", "endTime":"HH:mm:ss"}` |
 | **POST** | `/api/urls` | Crear Link Corto | **SÍ** | `{"originalUrl":"", "customAlias":""}` |
 | **GET** | `/r/{code}` | Redirección | No | - |
+| **POST** | `/api/appointments` | Crear Reserva (Híbrido) | Opcional | Ver ejemplo abajo |
+| **GET** | `/api/appointments/me` | Historial de Citas | **SÍ** | - |
+| **GET** | `/api/appointments/by-code/{code}` | Consultar Cita por Código | No | - |
+| **PATCH** | `/api/appointments/{code}/status` | Confirmar/Cancelar Cita | No | - |
+| **GET** | `/api/appointments/professional` | Ver mi Agenda (Profesional) | **SÍ** | - |
+| **PATCH** | `/api/appointments/{id}/status-admin` | Gestionar Cita por ID | **SÍ** | - |
+| **PATCH** | `/api/professional/settings` | Ajustes de Domicilio | **SÍ** | `{"allowsHomeVisit":true, "homeVisitFee":5000}` |
+| **GET** | `/api/addresses` | Listar mis Direcciones | **SÍ** | - |
+| **POST** | `/api/addresses` | Agregar Dirección | **SÍ** | `{"label":"", "address":""}` |
+| **DELETE** | `/api/addresses/{id}` | Eliminar Dirección | **SÍ** | - |
 
 ---
 

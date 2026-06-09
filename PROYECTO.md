@@ -41,6 +41,9 @@ El servidor arranca en: `http://localhost:8081`
 | GET | `/api/services` | Listar servicios disponibles |
 | GET | `/api/availabilities/professional/{id}` | Ver disponibilidad de un profesional |
 | GET | `/r/{shortCode}` | Redirección por URL corta |
+| POST | `/api/appointments` | Crear reserva (Híbrido - vincula si hay token, sino invitado) |
+| GET | `/api/appointments/by-code/{code}` | Consultar cita por código de reserva |
+| PATCH | `/api/appointments/{code}/status` | Confirmar/Cancelar cita por código |
 
 ### Endpoints protegidos (requieren `Authorization: Bearer <token>`)
 | Método | Ruta | Descripción |
@@ -50,6 +53,13 @@ El servidor arranca en: `http://localhost:8081`
 | POST | `/api/services` | Crear un servicio |
 | POST | `/api/urls` | Crear URL corta |
 | GET | `/api/urls` | Listar mis URLs cortas |
+| GET | `/api/appointments/me` | Ver historial de citas (Paciente) |
+| GET | `/api/appointments/professional` | Ver agenda del profesional (Profesional) |
+| PATCH | `/api/appointments/{id}/status-admin` | Actualizar estado de cita por ID (Profesional) |
+| PATCH | `/api/professional/settings` | Configurar visitas a domicilio (Profesional) |
+| GET | `/api/addresses` | Listar mis direcciones de domicilio (Paciente) |
+| POST | `/api/addresses` | Agregar dirección de domicilio (Paciente) |
+| DELETE | `/api/addresses/{id}` | Eliminar dirección de domicilio (Paciente) |
 
 ---
 

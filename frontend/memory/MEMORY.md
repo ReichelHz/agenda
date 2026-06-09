@@ -29,7 +29,7 @@
 - POST `/api/services` — crear servicio (protegido)
 - GET `/api/availabilities/professional/{id}` — disponibilidad (público)
 - POST `/api/availabilities` — crear disponibilidad (protegido)
-- POST `/api/appointments` — PENDIENTE en backend (UI lista)
+- POST `/api/appointments` — FINALIZADO en backend (UI lista)
 
 ## Roles disponibles
 - `PATIENT` — panel paciente, puede agendar
